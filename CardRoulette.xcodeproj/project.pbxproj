@@ -168,6 +168,8 @@
 		FDAE1E671B1A487600A89C51 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftMigration = 0720;
+				LastSwiftUpdateCheck = 0720;
 				LastUpgradeCheck = 0630;
 				ORGANIZATIONNAME = gpj;
 				TargetAttributes = {
@@ -425,6 +427,7 @@
 				FDAE1E901B1A487600A89C51 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FDAE1E911B1A487600A89C51 /* Build configuration list for PBXNativeTarget "CardRouletteTests" */ = {
 			isa = XCConfigurationList;
@@ -433,6 +436,7 @@
 				FDAE1E931B1A487600A89C51 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
