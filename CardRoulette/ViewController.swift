@@ -20,8 +20,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     @IBOutlet var tableView: UITableView!
 
     @IBAction func unwindToList(segue:UIStoryboardSegue){
-        var source: AddParticipantViewController = segue.sourceViewController as! AddParticipantViewController
-        if var item: ParticipantListItem = source.participantItem{
+        let source: AddParticipantViewController = segue.sourceViewController as! AddParticipantViewController
+        if let item: ParticipantListItem = source.participantItem{
             self.players.addObject(item)
             self.tableView.reloadData()
         }
@@ -35,16 +35,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         self.performSegueWithIdentifier("presentWinner", sender: self)
     }
 
-    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent) {
+    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
         if(event.subtype == UIEventSubtype.MotionShake) {
             self.performSegueWithIdentifier("presentWinner", sender: self)
         }
     }
 
     func pickAWinner() -> String {
-        var randomIndex = arc4random() % UInt32(players.count)
-        var winner = self.players.objectAtIndex(Int(randomIndex)) as! ParticipantListItem
-        var winnerName = winner.itemName as String
+        let randomIndex = arc4random() % UInt32(players.count)
+        let winner = self.players.objectAtIndex(Int(randomIndex)) as! ParticipantListItem
+        let winnerName = winner.itemName as String
         return winnerName
     }
 
@@ -86,7 +86,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     func loadInitialData(){
-        var item1 = ParticipantListItem(name:"Hemal")
+        let item1 = ParticipantListItem(name:"Hemal")
         self.players.addObject(item1)
     }
 
@@ -102,11 +102,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let CellIndentifier: NSString = "ListPrototypeCell"
 
-        var cell : UITableViewCell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String) as! UITableViewCell
+        let cell : UITableViewCell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String) as! UITableViewCell
 
 
 
-        var participantItem = self.players.objectAtIndex(indexPath.row) as! ParticipantListItem
+        let participantItem = self.players.objectAtIndex(indexPath.row) as! ParticipantListItem
 
         cell.textLabel?.text = participantItem.itemName as String
         cell.textLabel?.textColor = UIColor.blackColor()
