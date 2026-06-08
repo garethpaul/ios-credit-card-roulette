@@ -17,6 +17,10 @@ DerivedData
 *.ipa
 *.xcuserstate
 .DS_Store
+*.local.xcconfig
+*.secrets.xcconfig
+.env
+.env.*
 
 # CocoaPods
 #

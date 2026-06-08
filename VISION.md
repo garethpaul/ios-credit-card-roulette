@@ -19,10 +19,12 @@ Priority:
 - Keep the visual demo and README aligned with app behavior
 - Avoid storing real payment information
 - Maintain a simple Xcode project structure
+- Keep `scripts/check-baseline.py` passing for empty-list winner selection,
+  local-only participant data, hex color parsing, plist/storyboard XML, and
+  Xcode metadata
 
 Next priorities:
 
-- Add README setup and verification instructions
 - Add tests or manual checks for participant validation and winner selection
 - Modernize Swift/project settings in a dedicated pass
 - Clarify that the app does not process payments
@@ -43,6 +45,11 @@ Canonical security policy and reporting:
 This app should not collect, store, or process credit card numbers. Participant
 names or payment choices should remain local unless a future design says
 otherwise.
+
+Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
+It verifies empty-list winner selection, invalid hex fallback behavior,
+local-only participant data expectations, project metadata, and documentation
+guardrails.
 
 ## What We Will Not Merge (For Now)
 

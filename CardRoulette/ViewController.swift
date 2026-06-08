@@ -41,7 +41,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
     }
 
-    func pickAWinner() -> String {
+    func pickAWinner() -> String? {
+        if players.count == 0 {
+            return nil
+        }
         let randomIndex = arc4random() % UInt32(players.count)
         let winner = self.players.objectAtIndex(Int(randomIndex)) as! ParticipantListItem
         let winnerName = winner.itemName as String
@@ -78,9 +81,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         // Create a variable that you want to send
 
         if (segue.identifier == "presentWinner"){
-            let winnerName = pickAWinner()
             let winnerVC = segue.destinationViewController as! WinnerViewController
-            winnerVC.winnerName = winnerName
+            if let winnerName = pickAWinner() {
+                winnerVC.winnerName = winnerName
+            } else {
+                winnerVC.winnerName = "Add participants first"
+            }
         }
             
     }
