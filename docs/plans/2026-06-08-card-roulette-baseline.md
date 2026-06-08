@@ -12,6 +12,8 @@ remain a macOS/Xcode responsibility.
 ## Objectives
 
 - Prevent empty participant lists from crashing winner selection.
+- Prevent winner presentation when there are no participants.
+- Trim participant names and ignore blank entries.
 - Keep participant names local-only and avoid payment-card data handling.
 - Reject invalid partial hex color scans.
 - Add a reproducible `make check` baseline for project metadata, plist/storyboard XML, source inventory, and privacy guardrails.

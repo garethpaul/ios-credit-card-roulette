@@ -108,6 +108,9 @@ def main():
     require("func pickAWinner() -> String?" in view_controller and "players.count == 0" in view_controller,
             "Winner selection must return nil for empty participant lists",
             failures)
+    require("if self.players.count > 0" in view_controller and "if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0" in view_controller,
+            "winner actions must be blocked when there are no participants",
+            failures)
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
             failures)
@@ -116,6 +119,14 @@ def main():
             failures)
     require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
+            failures)
+    add_controller = read("CardRoulette/AddParticipantViewController.swift")
+    require("stringByTrimmingCharactersInSet" in add_controller and "participantName.isEmpty" in add_controller,
+            "participant entry must trim names and ignore blank input",
+            failures)
+    cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell!", view_controller)
+    require(cell_body is not None and "tableView.reloadData()" not in cell_body.group(0),
+            "cell construction must not recursively reload the table",
             failures)
     require("return UIColor.grayColor()" in hex_source,
             "Hex parser must keep gray fallback behavior",
@@ -146,8 +157,8 @@ def main():
     require("credit card" in security.lower() and "make check" in security,
             "SECURITY must document payment-data boundary and static baseline",
             failures)
-    require("empty participant" in changes.lower() and "make check" in changes,
-            "CHANGES must record the empty-list guard and baseline",
+    require("empty participant" in changes.lower() and "blank" in changes.lower() and "make check" in changes,
+            "CHANGES must record the empty-list, blank-input, and baseline updates",
             failures)
     require("status: completed" in plan,
             "plan must be marked completed",

@@ -32,11 +32,13 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var logoView: UIImageView!
 
     @IBAction func clickBtn(sender: AnyObject) {
-        self.performSegueWithIdentifier("presentWinner", sender: self)
+        if self.players.count > 0 {
+            self.performSegueWithIdentifier("presentWinner", sender: self)
+        }
     }
 
     override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
-        if(event!.subtype == UIEventSubtype.MotionShake) {
+        if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0 {
             self.performSegueWithIdentifier("presentWinner", sender: self)
         }
     }
@@ -118,7 +120,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         if participantItem.completed{
             cell!.accessoryType = .Checkmark
-            tableView.reloadData()
         }
 
         else{

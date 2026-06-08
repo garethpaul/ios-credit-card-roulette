@@ -37,8 +37,9 @@ class AddParticipantViewController: UIViewController {
         if sender as? NSObject != self.doneButton{
             return
         }
-        if !self.textfield.text!.isEmpty{
-            self.participantItem = ParticipantListItem(name: self.textfield.text!)
+        let participantName = self.textfield.text!.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+        if !participantName.isEmpty{
+            self.participantItem = ParticipantListItem(name: participantName)
         }
     }
 
