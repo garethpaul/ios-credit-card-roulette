@@ -1,5 +1,8 @@
 # ios-credit-card-roulette
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/ios-credit-card-roulette` is an Apple platform application or Swift sample. Credit Card Roulette
@@ -72,4 +75,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > Credit Card Roulette <!-- README-OVERVIEW-IMAGE --> <p> A simple credit card roulette app 💳</p>
-
