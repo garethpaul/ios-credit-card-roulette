@@ -43,3 +43,6 @@ otherwise.
 - Storage of credit card data
 - Background sharing of participant data
 - Broad project migration mixed with app behavior changes
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
