@@ -33,6 +33,11 @@ Contribution rules:
 
 ## Security And Privacy
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 This app should not collect, store, or process credit card numbers. Participant
 names or payment choices should remain local unless a future design says
 otherwise.
