@@ -37,7 +37,7 @@ This app should not collect, store, or process credit card numbers. Participant
 names or payment choices should remain local unless a future design says
 otherwise.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Real payment processing
 - Storage of credit card data
