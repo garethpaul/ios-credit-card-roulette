@@ -5,6 +5,7 @@
 - Guarded winner selection so an empty participant list shows a fallback instead of dividing by zero.
 - Blocked button and shake winner presentation when there are no participants.
 - Trimmed participant names before adding them and ignored blank input.
+- Guarded winner-screen fallback text and trimmed winner-side participant input without force-unwrapping text fields.
 - Switched winner selection to `arc4random_uniform` for bounded local random selection.
 - Removed table reloads from cell construction.
 - Rejected partial invalid hex color scans so malformed colors fall back to gray.

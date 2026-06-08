@@ -60,7 +60,7 @@ Run the local static baseline:
 make check
 ```
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory, verifies that empty participant lists cannot crash winner selection, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory, verifies that empty participant lists cannot crash winner selection, checks winner-screen fallback and input guards, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 For full legacy verification on macOS, use Xcode's test action or `xcodebuild test` with the appropriate scheme and destination.
 

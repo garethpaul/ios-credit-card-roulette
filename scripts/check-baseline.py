@@ -8,7 +8,8 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
+BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
+WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
 
 
 def require(condition, message, failures):
@@ -62,6 +63,7 @@ def main():
         "CardRouletteTests/Info.plist",
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-card-roulette-baseline.md",
+        "docs/plans/2026-06-08-winner-input-guard.md",
         "img/app.gif",
     ]
 
@@ -94,7 +96,8 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
-    plan = PLAN.read_text(encoding="utf-8") if PLAN.exists() else ""
+    baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
+    winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -113,6 +116,16 @@ def main():
             failures)
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
+            failures)
+    winner_controller = read("CardRoulette/WinnerViewController.swift")
+    require('winnerName ?? "Add participants first"' in winner_controller,
+            "Winner screen must show a fallback when opened without a winner name",
+            failures)
+    require("participantItem = nil" in winner_controller and "textfield?.text?.stringByTrimmingCharactersInSet" in winner_controller and "participantName.isEmpty" in winner_controller,
+            "Winner participant entry must trim names and ignore blank input",
+            failures)
+    require("textfield.text!" not in winner_controller,
+            "Winner participant entry must not force-unwrap text field contents",
             failures)
     require("arc4random_uniform(UInt32(players.count))" in view_controller,
             "Winner selection must use bounded random participant selection",
@@ -145,8 +158,8 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme,
-            "README must document static verification, project usage, and payment boundary",
+    require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and "winner" in readme.lower(),
+            "README must document static verification, project usage, winner guards, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
@@ -157,11 +170,11 @@ def main():
     require("credit card" in security.lower() and "make check" in security,
             "SECURITY must document payment-data boundary and static baseline",
             failures)
-    require("empty participant" in changes.lower() and "blank" in changes.lower() and "make check" in changes,
-            "CHANGES must record the empty-list, blank-input, and baseline updates",
+    require("empty participant" in changes.lower() and "blank" in changes.lower() and "winner" in changes.lower() and "make check" in changes,
+            "CHANGES must record the empty-list, blank-input, winner, and baseline updates",
             failures)
-    require("status: completed" in plan,
-            "plan must be marked completed",
+    require("status: completed" in baseline_plan and "status: completed" in winner_input_plan,
+            "plans must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

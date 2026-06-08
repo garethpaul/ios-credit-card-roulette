@@ -29,7 +29,7 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - This sample must not collect, store, or process credit card numbers. Treat any real payment processing, persistence, analytics, or participant-data sharing as security-sensitive scope expansion.
-- `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, empty-list winner selection, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
+- `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
 
 ## Mobile Privacy Notes
 

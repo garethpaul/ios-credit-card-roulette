@@ -18,6 +18,7 @@ Priority:
 - Preserve participant entry and winner-selection flow
 - Keep the visual demo and README aligned with app behavior
 - Avoid storing real payment information
+- Keep participant input trimmed and winner display fallbacks explicit
 - Maintain a simple Xcode project structure
 - Keep `scripts/check-baseline.py` passing for empty-list winner selection,
   local-only participant data, hex color parsing, plist/storyboard XML, and
@@ -48,8 +49,8 @@ otherwise.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
 It verifies empty-list winner selection, invalid hex fallback behavior,
-local-only participant data expectations, project metadata, and documentation
-guardrails.
+winner-screen input guards, local-only participant data expectations, project
+metadata, and documentation guardrails.
 
 ## What We Will Not Merge (For Now)
 

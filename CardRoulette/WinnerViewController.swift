@@ -27,7 +27,7 @@ class WinnerViewController: UIViewController {
         self.navigationController?.view.bringSubviewToFront(logoView)
         // Do any additional setup after loading the view, typically from a nib.
 
-        self.winnerLabel.text = winnerName
+        self.winnerLabel.text = winnerName ?? "Add participants first"
         
     }
 
@@ -37,11 +37,12 @@ class WinnerViewController: UIViewController {
     }
 
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        self.participantItem = nil
         if sender as? NSObject != self.doneButton{
             return
         }
-        if !self.textfield.text!.isEmpty{
-            self.participantItem = ParticipantListItem(name: self.textfield.text!)
+        if let participantName = self.textfield?.text?.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()) where !participantName.isEmpty{
+            self.participantItem = ParticipantListItem(name: participantName)
         }
     }
 
