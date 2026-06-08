@@ -1,5 +1,8 @@
 ## iOS Credit Card Roulette Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 iOS Credit Card Roulette is a simple Swift app for entering participants and
 randomly selecting who pays.
 
