@@ -34,11 +34,11 @@ class AddParticipantViewController: UIViewController {
     }
 
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        self.participantItem = nil
         if sender as? NSObject != self.doneButton{
             return
         }
-        let participantName = self.textfield.text!.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        if !participantName.isEmpty{
+        if let participantName = self.textfield.text?.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()) where !participantName.isEmpty{
             self.participantItem = ParticipantListItem(name: participantName)
         }
     }

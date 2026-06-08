@@ -114,14 +114,14 @@ def main():
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
             failures)
-    require("arc4random() % UInt32(players.count)" in view_controller,
-            "Winner selection must keep the legacy random participant behavior",
+    require("arc4random_uniform(UInt32(players.count))" in view_controller,
+            "Winner selection must use bounded random participant selection",
             failures)
     require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
             failures)
     add_controller = read("CardRoulette/AddParticipantViewController.swift")
-    require("stringByTrimmingCharactersInSet" in add_controller and "participantName.isEmpty" in add_controller,
+    require("participantItem = nil" in add_controller and "text?.stringByTrimmingCharactersInSet" in add_controller and "participantName.isEmpty" in add_controller,
             "participant entry must trim names and ignore blank input",
             failures)
     cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell!", view_controller)

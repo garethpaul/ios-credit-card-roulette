@@ -47,7 +47,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if players.count == 0 {
             return nil
         }
-        let randomIndex = arc4random() % UInt32(players.count)
+        let randomIndex = arc4random_uniform(UInt32(players.count))
         let winner = self.players.objectAtIndex(Int(randomIndex)) as! ParticipantListItem
         let winnerName = winner.itemName as String
         return winnerName
