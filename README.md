@@ -74,4 +74,4 @@ Keep changes small and tied to the project that is already present in this repos
 
 Prior README summary:
 
-> Credit Card Roulette <!-- README-OVERVIEW-IMAGE --> <p> A simple credit card roulette app 💳</p>
+> Credit Card Roulette <p> A simple credit card roulette app 💳</p>
