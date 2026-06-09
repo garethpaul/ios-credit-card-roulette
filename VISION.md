@@ -27,6 +27,8 @@ Priority:
 - Keep `scripts/check-baseline.py` passing for empty-list winner selection,
   local-only participant data, hex color parsing, plist/storyboard XML, and
   Xcode metadata
+- Keep `make lint`, `make test`, `make build`, and `make check` available as
+  local verification gates
 
 Next priorities:
 
@@ -51,12 +53,13 @@ This app should not collect, store, or process credit card numbers. Participant
 names or payment choices should remain local unless a future design says
 otherwise.
 
-Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
-It verifies empty-list winner selection, shared participant-name normalization,
-focused XCTest assertions, participant unwind source handling, typed participant
-filtering, participant removal index guards, invalid hex fallback behavior,
-winner-screen input guards, fallback cell handling, local-only participant data
-expectations, project metadata, and documentation guardrails.
+Current baseline: `make lint`, `make test`, `make build`, and `make check` run
+`scripts/check-baseline.py` without Xcode. It verifies empty-list winner
+selection, shared participant-name normalization, focused XCTest assertions,
+participant unwind source handling, typed participant filtering, participant
+removal index guards, invalid hex fallback behavior, winner-screen input guards,
+fallback cell handling, local-only participant data expectations, project
+metadata, and documentation guardrails.
 
 ## What We Will Not Merge (For Now)
 

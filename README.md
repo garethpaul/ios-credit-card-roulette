@@ -41,6 +41,9 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/ios-credit-card-roulette.git
 cd ios-credit-card-roulette
+make lint
+make test
+make build
 make check
 ```
 
@@ -62,8 +65,15 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 Run the local static baseline:
 
 ```bash
+make lint
+make test
+make build
 make check
 ```
+
+The `lint`, `test`, and `build` targets intentionally alias the static baseline
+on hosts without the legacy Xcode toolchain, so the standard local gate commands
+stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner-screen fallback and input guards, checks table fallback cell handling, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
@@ -90,7 +100,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-unwind-source-guard.md` for the participant unwind source guardrail.
 - See `docs/plans/2026-06-09-participant-array-type-guard.md` for the typed participant array guardrail.
 - See `docs/plans/2026-06-09-participant-removal-index-guard.md` for the participant removal index guardrail.
-- Run `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
+- See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
+- Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing
 

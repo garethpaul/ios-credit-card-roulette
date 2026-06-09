@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
+MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
 CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
 PARTICIPANT_NORMALIZER_PLAN = ROOT / "docs/plans/2026-06-08-participant-name-normalizer.md"
@@ -68,6 +69,7 @@ def main():
         "CardRouletteTests/Info.plist",
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-card-roulette-baseline.md",
+        "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-08-winner-input-guard.md",
         "docs/plans/2026-06-08-table-cell-fallback.md",
         "docs/plans/2026-06-08-participant-name-normalizer.md",
@@ -107,7 +109,9 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
+    makefile = read("Makefile")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
+    make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
     cell_fallback_plan = CELL_FALLBACK_PLAN.read_text(encoding="utf-8") if CELL_FALLBACK_PLAN.exists() else ""
     participant_normalizer_plan = PARTICIPANT_NORMALIZER_PLAN.read_text(encoding="utf-8") if PARTICIPANT_NORMALIZER_PLAN.exists() else ""
@@ -218,7 +222,10 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
+    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
+            "Makefile must expose lint, test, and build aliases for the local baseline",
+            failures)
+    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
             "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
             "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower(),
             "README must document static verification, project usage, winner guards, typed participant guards, cell fallback, and payment boundary",
@@ -226,7 +233,7 @@ def main():
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and
+    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-only" in vision.lower() and
             "fallback cell" in vision.lower() and "normalization" in vision.lower() and
             "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower(),
             "VISION must describe the current static privacy baseline",
@@ -238,7 +245,7 @@ def main():
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and
-            "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and "make check" in changes,
+            "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
     require("typed participant" in changes.lower(),
@@ -247,6 +254,9 @@ def main():
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
             "plans must be marked completed",
+            failures)
+    require("status: completed" in make_gates_plan,
+            "make gate aliases plan must be marked completed",
             failures)
     require("status: completed" in unwind_source_plan,
             "unwind source guard plan must be marked completed",

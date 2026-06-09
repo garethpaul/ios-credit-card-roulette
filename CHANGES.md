@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added local `make lint`, `make test`, and `make build` gate aliases for the
+  static roulette baseline.
 - Added a participant removal index guard so stale or invalid table selections
   do not mutate the legacy player list.
 
