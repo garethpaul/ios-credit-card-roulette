@@ -20,12 +20,22 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     @IBOutlet var tableView: UITableView!
 
     @IBAction func unwindToList(segue:UIStoryboardSegue){
-        let source: AddParticipantViewController = segue.sourceViewController as! AddParticipantViewController
-        if let item: ParticipantListItem = source.participantItem{
+        if let item: ParticipantListItem = participantItemFromSegueSource(segue.sourceViewController){
             self.players.addObject(item)
             self.tableView.reloadData()
         }
 
+    }
+
+    func participantItemFromSegueSource(source: AnyObject?) -> ParticipantListItem? {
+        if let addParticipantSource = source as? AddParticipantViewController {
+            return addParticipantSource.participantItem
+        }
+        if let winnerSource = source as? WinnerViewController {
+            return winnerSource.participantItem
+        }
+
+        return nil
     }
 
     var players: NSMutableArray = []

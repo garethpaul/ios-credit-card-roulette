@@ -51,9 +51,10 @@ otherwise.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
 It verifies empty-list winner selection, shared participant-name normalization,
-focused XCTest assertions, invalid hex fallback behavior, winner-screen input
-guards, fallback cell handling, local-only participant data expectations, project
-metadata, and documentation guardrails.
+focused XCTest assertions, participant unwind source handling, invalid hex
+fallback behavior, winner-screen input guards, fallback cell handling,
+local-only participant data expectations, project metadata, and documentation
+guardrails.
 
 ## What We Will Not Merge (For Now)
 

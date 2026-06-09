@@ -12,6 +12,7 @@ BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
 WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
 CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
 PARTICIPANT_NORMALIZER_PLAN = ROOT / "docs/plans/2026-06-08-participant-name-normalizer.md"
+UNWIND_SOURCE_PLAN = ROOT / "docs/plans/2026-06-09-unwind-source-guard.md"
 
 
 def require(condition, message, failures):
@@ -68,6 +69,7 @@ def main():
         "docs/plans/2026-06-08-winner-input-guard.md",
         "docs/plans/2026-06-08-table-cell-fallback.md",
         "docs/plans/2026-06-08-participant-name-normalizer.md",
+        "docs/plans/2026-06-09-unwind-source-guard.md",
         "img/app.gif",
     ]
 
@@ -105,6 +107,7 @@ def main():
     winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
     cell_fallback_plan = CELL_FALLBACK_PLAN.read_text(encoding="utf-8") if CELL_FALLBACK_PLAN.exists() else ""
     participant_normalizer_plan = PARTICIPANT_NORMALIZER_PLAN.read_text(encoding="utf-8") if PARTICIPANT_NORMALIZER_PLAN.exists() else ""
+    unwind_source_plan = UNWIND_SOURCE_PLAN.read_text(encoding="utf-8") if UNWIND_SOURCE_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -123,6 +126,12 @@ def main():
             failures)
     require("if self.players.count > 0" in view_controller and "if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0" in view_controller,
             "winner actions must be blocked when there are no participants",
+            failures)
+    require("func participantItemFromSegueSource(source: AnyObject?) -> ParticipantListItem?" in view_controller and
+            "source as? AddParticipantViewController" in view_controller and
+            "source as? WinnerViewController" in view_controller and
+            "as! AddParticipantViewController" not in view_controller,
+            "unwind handling must accept known participant sources without force-casting",
             failures)
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
@@ -155,6 +164,9 @@ def main():
             failures)
     require("testParticipantNameNormalizationTrimsWhitespace" in tests and "XCTAssertEqual" in tests and
             "testParticipantNameNormalizationRejectsBlankNames" in tests and "XCTAssertNil" in tests and
+            "testParticipantItemFromAddParticipantSource" in tests and
+            "testParticipantItemFromWinnerSource" in tests and
+            "testParticipantItemFromUnknownSourceReturnsNil" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
@@ -183,27 +195,30 @@ def main():
             ".gitignore must exclude local config and Xcode build products",
             failures)
     require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
-            "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower(),
+            "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and "unwind" in readme.lower(),
             "README must document static verification, project usage, winner guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
     require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and
-            "fallback cell" in vision.lower() and "normalization" in vision.lower(),
+            "fallback cell" in vision.lower() and "normalization" in vision.lower() and "unwind" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
-    require("credit card" in security.lower() and "make check" in security and "normalization" in security.lower(),
+    require("credit card" in security.lower() and "make check" in security and "normalization" in security.lower() and "unwind" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and
-            "normalization" in changes.lower() and "make check" in changes,
+            "normalization" in changes.lower() and "unwind" in changes.lower() and "make check" in changes,
             "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
             "plans must be marked completed",
+            failures)
+    require("status: completed" in unwind_source_plan,
+            "unwind source guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

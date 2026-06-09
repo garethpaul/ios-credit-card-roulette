@@ -6,6 +6,7 @@
 - Blocked button and shake winner presentation when there are no participants.
 - Trimmed participant names before adding them and ignored blank input.
 - Moved participant-name normalization into a shared helper and added focused XCTest assertions for it.
+- Guarded participant unwind sources before reading participant items.
 - Guarded winner-screen fallback text and trimmed winner-side participant input without force-unwrapping text fields.
 - Switched winner selection to `arc4random_uniform` for bounded local random selection.
 - Removed table reloads from cell construction.
