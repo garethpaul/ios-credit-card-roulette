@@ -65,4 +65,21 @@ class CardRouletteTests: XCTestCase {
         XCTAssertNil(controller.participantItemAtIndex(1), "Out-of-range participant indexes should be ignored")
     }
 
+    func testRemoveParticipantAtIndexRemovesValidEntry() {
+        let controller = ViewController()
+        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertTrue(controller.removeParticipantAtIndex(0), "Valid participant indexes should be removable")
+        XCTAssertEqual(controller.players.count, 0, "Removing a valid participant should update the player list")
+    }
+
+    func testRemoveParticipantAtIndexRejectsInvalidIndexes() {
+        let controller = ViewController()
+        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertFalse(controller.removeParticipantAtIndex(-1), "Negative participant indexes should not be removed")
+        XCTAssertFalse(controller.removeParticipantAtIndex(1), "Out-of-range participant indexes should not be removed")
+        XCTAssertEqual(controller.players.count, 1, "Invalid participant indexes should leave the player list unchanged")
+    }
+
 }

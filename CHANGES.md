@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Added a participant removal index guard so stale or invalid table selections
+  do not mutate the legacy player list.
+
 ## 2026-06-08
 
 - Guarded winner selection so an empty participant list shows a fallback instead of dividing by zero.

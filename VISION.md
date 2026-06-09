@@ -21,6 +21,7 @@ Priority:
 - Keep participant input trimmed and winner display fallbacks explicit
 - Keep participant-name normalization shared and covered by focused tests
 - Keep typed participant filtering in front of the legacy mutable player list
+- Keep participant removal guarded by row index checks
 - Keep participant table rows resilient with a fallback cell
 - Maintain a simple Xcode project structure
 - Keep `scripts/check-baseline.py` passing for empty-list winner selection,
@@ -53,9 +54,9 @@ otherwise.
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
 It verifies empty-list winner selection, shared participant-name normalization,
 focused XCTest assertions, participant unwind source handling, typed participant
-filtering, invalid hex fallback behavior, winner-screen input guards, fallback
-cell handling, local-only participant data expectations, project metadata, and
-documentation guardrails.
+filtering, participant removal index guards, invalid hex fallback behavior,
+winner-screen input guards, fallback cell handling, local-only participant data
+expectations, project metadata, and documentation guardrails.
 
 ## What We Will Not Merge (For Now)
 

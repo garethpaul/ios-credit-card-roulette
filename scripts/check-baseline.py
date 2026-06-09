@@ -14,6 +14,7 @@ CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
 PARTICIPANT_NORMALIZER_PLAN = ROOT / "docs/plans/2026-06-08-participant-name-normalizer.md"
 UNWIND_SOURCE_PLAN = ROOT / "docs/plans/2026-06-09-unwind-source-guard.md"
 PARTICIPANT_ARRAY_PLAN = ROOT / "docs/plans/2026-06-09-participant-array-type-guard.md"
+PARTICIPANT_REMOVAL_PLAN = ROOT / "docs/plans/2026-06-09-participant-removal-index-guard.md"
 
 
 def require(condition, message, failures):
@@ -72,6 +73,7 @@ def main():
         "docs/plans/2026-06-08-participant-name-normalizer.md",
         "docs/plans/2026-06-09-unwind-source-guard.md",
         "docs/plans/2026-06-09-participant-array-type-guard.md",
+        "docs/plans/2026-06-09-participant-removal-index-guard.md",
         "img/app.gif",
     ]
 
@@ -111,6 +113,7 @@ def main():
     participant_normalizer_plan = PARTICIPANT_NORMALIZER_PLAN.read_text(encoding="utf-8") if PARTICIPANT_NORMALIZER_PLAN.exists() else ""
     unwind_source_plan = UNWIND_SOURCE_PLAN.read_text(encoding="utf-8") if UNWIND_SOURCE_PLAN.exists() else ""
     participant_array_plan = PARTICIPANT_ARRAY_PLAN.read_text(encoding="utf-8") if PARTICIPANT_ARRAY_PLAN.exists() else ""
+    participant_removal_plan = PARTICIPANT_REMOVAL_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -167,6 +170,11 @@ def main():
             "return self.players.objectAtIndex(index) as? ParticipantListItem" in view_controller,
             "Participant table rendering must use a guarded participant accessor",
             failures)
+    require("func removeParticipantAtIndex(index: Int) -> Bool" in view_controller and
+            "self.players.removeObjectAtIndex(index)" in view_controller and
+            "if self.removeParticipantAtIndex(indexPath.row)" in view_controller,
+            "Participant row deletion must use a guarded removal helper",
+            failures)
     require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
             failures)
@@ -181,6 +189,8 @@ def main():
             "testParticipantItemFromUnknownSourceReturnsNil" in tests and
             "testParticipantItemsIgnoreInvalidPlayerEntries" in tests and
             "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
+            "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
+            "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
@@ -210,7 +220,7 @@ def main():
             failures)
     require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
             "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
-            "unwind" in readme.lower() and "typed participant" in readme.lower(),
+            "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower(),
             "README must document static verification, project usage, winner guards, typed participant guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
@@ -218,17 +228,17 @@ def main():
             failures)
     require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and
             "fallback cell" in vision.lower() and "normalization" in vision.lower() and
-            "unwind" in vision.lower() and "typed participant" in vision.lower(),
+            "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
     require("credit card" in security.lower() and "make check" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
-            "typed participant" in security.lower(),
+            "typed participant" in security.lower() and "participant removal" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and
-            "normalization" in changes.lower() and "unwind" in changes.lower() and "make check" in changes,
+            "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and "make check" in changes,
             "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
     require("typed participant" in changes.lower(),
@@ -243,6 +253,9 @@ def main():
             failures)
     require("status: completed" in participant_array_plan,
             "participant array type guard plan must be marked completed",
+            failures)
+    require("status: completed" in participant_removal_plan,
+            "participant removal index guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

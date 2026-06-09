@@ -84,6 +84,15 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         return self.players.objectAtIndex(index) as? ParticipantListItem
     }
 
+    func removeParticipantAtIndex(index: Int) -> Bool {
+        if index < 0 || index >= self.players.count {
+            return false
+        }
+
+        self.players.removeObjectAtIndex(index)
+        return true
+    }
+
     
 
     override func viewDidLoad(){
@@ -164,8 +173,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         tableView.deselectRowAtIndexPath(indexPath, animated: false)
-        self.players.removeObjectAtIndex(indexPath.row)
-        tableView.reloadData()
+        if self.removeParticipantAtIndex(indexPath.row) {
+            tableView.reloadData()
+        }
         
     }
 }
