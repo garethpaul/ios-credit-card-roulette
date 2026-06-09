@@ -7,6 +7,7 @@
 - Trimmed participant names before adding them and ignored blank input.
 - Moved participant-name normalization into a shared helper and added focused XCTest assertions for it.
 - Guarded participant unwind sources before reading participant items.
+- Filtered the legacy mutable player list down to typed participant entries before winner selection or row rendering.
 - Guarded winner-screen fallback text and trimmed winner-side participant input without force-unwrapping text fields.
 - Switched winner selection to `arc4random_uniform` for bounded local random selection.
 - Removed table reloads from cell construction.

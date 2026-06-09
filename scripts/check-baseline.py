@@ -13,6 +13,7 @@ WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
 CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
 PARTICIPANT_NORMALIZER_PLAN = ROOT / "docs/plans/2026-06-08-participant-name-normalizer.md"
 UNWIND_SOURCE_PLAN = ROOT / "docs/plans/2026-06-09-unwind-source-guard.md"
+PARTICIPANT_ARRAY_PLAN = ROOT / "docs/plans/2026-06-09-participant-array-type-guard.md"
 
 
 def require(condition, message, failures):
@@ -70,6 +71,7 @@ def main():
         "docs/plans/2026-06-08-table-cell-fallback.md",
         "docs/plans/2026-06-08-participant-name-normalizer.md",
         "docs/plans/2026-06-09-unwind-source-guard.md",
+        "docs/plans/2026-06-09-participant-array-type-guard.md",
         "img/app.gif",
     ]
 
@@ -108,6 +110,7 @@ def main():
     cell_fallback_plan = CELL_FALLBACK_PLAN.read_text(encoding="utf-8") if CELL_FALLBACK_PLAN.exists() else ""
     participant_normalizer_plan = PARTICIPANT_NORMALIZER_PLAN.read_text(encoding="utf-8") if PARTICIPANT_NORMALIZER_PLAN.exists() else ""
     unwind_source_plan = UNWIND_SOURCE_PLAN.read_text(encoding="utf-8") if UNWIND_SOURCE_PLAN.exists() else ""
+    participant_array_plan = PARTICIPANT_ARRAY_PLAN.read_text(encoding="utf-8") if PARTICIPANT_ARRAY_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -121,8 +124,10 @@ def main():
     require("ENABLE_TESTABILITY = YES;" in project and "@testable import CardRoulette" in tests,
             "Xcode project and tests must keep CardRoulette app code testable from XCTest",
             failures)
-    require("func pickAWinner() -> String?" in view_controller and "players.count == 0" in view_controller,
-            "Winner selection must return nil for empty participant lists",
+    require("func pickAWinner() -> String?" in view_controller and
+            "let participantItems = self.participantItems()" in view_controller and
+            "participantItems.count == 0" in view_controller,
+            "Winner selection must return nil when no typed participants are available",
             failures)
     require("if self.players.count > 0" in view_controller and "if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0" in view_controller,
             "winner actions must be blocked when there are no participants",
@@ -152,8 +157,15 @@ def main():
     require("textfield.text!" not in winner_controller,
             "Winner participant entry must not force-unwrap text field contents",
             failures)
-    require("arc4random_uniform(UInt32(players.count))" in view_controller,
-            "Winner selection must use bounded random participant selection",
+    require("func participantItems() -> [ParticipantListItem]" in view_controller and
+            "objectAtIndex(index) as? ParticipantListItem" in view_controller and
+            "arc4random_uniform(UInt32(participantItems.count))" in view_controller and
+            "self.players.objectAtIndex(Int(randomIndex)) as!" not in view_controller,
+            "Winner selection must filter the legacy player array before bounded random participant selection",
+            failures)
+    require("func participantItemAtIndex(index: Int) -> ParticipantListItem?" in view_controller and
+            "return self.players.objectAtIndex(index) as? ParticipantListItem" in view_controller,
+            "Participant table rendering must use a guarded participant accessor",
             failures)
     require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
@@ -167,6 +179,8 @@ def main():
             "testParticipantItemFromAddParticipantSource" in tests and
             "testParticipantItemFromWinnerSource" in tests and
             "testParticipantItemFromUnknownSourceReturnsNil" in tests and
+            "testParticipantItemsIgnoreInvalidPlayerEntries" in tests and
+            "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
@@ -195,17 +209,21 @@ def main():
             ".gitignore must exclude local config and Xcode build products",
             failures)
     require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
-            "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and "unwind" in readme.lower(),
-            "README must document static verification, project usage, winner guards, cell fallback, and payment boundary",
+            "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
+            "unwind" in readme.lower() and "typed participant" in readme.lower(),
+            "README must document static verification, project usage, winner guards, typed participant guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
     require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and
-            "fallback cell" in vision.lower() and "normalization" in vision.lower() and "unwind" in vision.lower(),
+            "fallback cell" in vision.lower() and "normalization" in vision.lower() and
+            "unwind" in vision.lower() and "typed participant" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
-    require("credit card" in security.lower() and "make check" in security and "normalization" in security.lower() and "unwind" in security.lower(),
+    require("credit card" in security.lower() and "make check" in security and
+            "normalization" in security.lower() and "unwind" in security.lower() and
+            "typed participant" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
@@ -213,12 +231,18 @@ def main():
             "normalization" in changes.lower() and "unwind" in changes.lower() and "make check" in changes,
             "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
+    require("typed participant" in changes.lower(),
+            "CHANGES must record typed participant array guard updates",
+            failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
             "plans must be marked completed",
             failures)
     require("status: completed" in unwind_source_plan,
             "unwind source guard plan must be marked completed",
+            failures)
+    require("status: completed" in participant_array_plan,
+            "participant array type guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

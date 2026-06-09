@@ -52,6 +52,7 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - The app stores participant names only in memory for the current run.
 - Participant-name normalization is shared by both entry screens and covered by focused XCTest assertions.
 - Participant unwind sources are checked before reading participant items.
+- Winner selection filters the legacy player list down to typed participant entries before choosing a winner.
 - Table rows use a fallback cell if the storyboard reuse identifier is unavailable.
 - The app does not process payments or collect credit card numbers.
 
@@ -63,7 +64,7 @@ Run the local static baseline:
 make check
 ```
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks winner-screen fallback and input guards, checks table fallback cell handling, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 For full legacy verification on macOS, use Xcode's test action or `xcodebuild test` with the appropriate scheme and destination.
 
@@ -86,6 +87,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-unwind-source-guard.md` for the participant unwind source guardrail.
+- See `docs/plans/2026-06-09-participant-array-type-guard.md` for the typed participant array guardrail.
 - Run `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing

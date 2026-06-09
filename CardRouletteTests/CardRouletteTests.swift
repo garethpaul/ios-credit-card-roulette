@@ -45,4 +45,24 @@ class CardRouletteTests: XCTestCase {
         XCTAssertNil(controller.participantItemFromSegueSource(UIViewController()), "Unrecognized unwind sources should be ignored")
     }
 
+    func testParticipantItemsIgnoreInvalidPlayerEntries() {
+        let controller = ViewController()
+        let item = ParticipantListItem(name: "Hemal")
+        controller.players.addObject(NSString(string: "invalid"))
+        controller.players.addObject(item)
+        let participantItems = controller.participantItems()
+
+        XCTAssertEqual(participantItems.count, 1, "Invalid player entries should not participate in winner selection")
+        XCTAssertTrue(participantItems[0] === item, "Valid participant entries should remain available")
+    }
+
+    func testParticipantItemAtIndexRejectsInvalidEntries() {
+        let controller = ViewController()
+        controller.players.addObject(NSString(string: "invalid"))
+
+        XCTAssertNil(controller.participantItemAtIndex(-1), "Negative participant indexes should be ignored")
+        XCTAssertNil(controller.participantItemAtIndex(0), "Non-participant entries should be ignored")
+        XCTAssertNil(controller.participantItemAtIndex(1), "Out-of-range participant indexes should be ignored")
+    }
+
 }

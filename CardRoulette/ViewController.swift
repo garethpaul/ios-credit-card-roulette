@@ -54,13 +54,34 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     func pickAWinner() -> String? {
-        if players.count == 0 {
+        let participantItems = self.participantItems()
+        if participantItems.count == 0 {
             return nil
         }
-        let randomIndex = arc4random_uniform(UInt32(players.count))
-        let winner = self.players.objectAtIndex(Int(randomIndex)) as! ParticipantListItem
+        let randomIndex = arc4random_uniform(UInt32(participantItems.count))
+        let winner = participantItems[Int(randomIndex)]
         let winnerName = winner.itemName as String
         return winnerName
+    }
+
+    func participantItems() -> [ParticipantListItem] {
+        var participantItems: [ParticipantListItem] = []
+
+        for index in 0..<self.players.count {
+            if let participantItem = self.players.objectAtIndex(index) as? ParticipantListItem {
+                participantItems.append(participantItem)
+            }
+        }
+
+        return participantItems
+    }
+
+    func participantItemAtIndex(index: Int) -> ParticipantListItem? {
+        if index < 0 || index >= self.players.count {
+            return nil
+        }
+
+        return self.players.objectAtIndex(index) as? ParticipantListItem
     }
 
     
@@ -122,20 +143,20 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         let cell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String) ?? UITableViewCell(style: .Default, reuseIdentifier: CellIndentifier as String)
 
-        let participantItem = self.players.objectAtIndex(indexPath.row) as! ParticipantListItem
+        if let participantItem = self.participantItemAtIndex(indexPath.row) {
+            cell.textLabel?.text = participantItem.itemName as String
+            cell.textLabel?.textColor = UIColor.blackColor()
 
-        cell.textLabel?.text = participantItem.itemName as String
-        cell.textLabel?.textColor = UIColor.blackColor()
-
-
-        if participantItem.completed{
-            cell.accessoryType = .Checkmark
+            if participantItem.completed{
+                cell.accessoryType = .Checkmark
+            }
+            else{
+                cell.accessoryType = .None
+            }
         }
-
         else{
-
+            cell.textLabel?.text = ""
             cell.accessoryType = .None
-
         }
 
         return cell
