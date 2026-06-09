@@ -8,6 +8,7 @@
 - Guarded winner-screen fallback text and trimmed winner-side participant input without force-unwrapping text fields.
 - Switched winner selection to `arc4random_uniform` for bounded local random selection.
 - Removed table reloads from cell construction.
+- Added a fallback cell so participant rows do not force-unwrap a missing storyboard cell.
 - Rejected partial invalid hex color scans so malformed colors fall back to gray.
 - Added `make check` and a static iOS roulette baseline for plist/storyboard XML, Xcode metadata, source inventory, local-only data flow, and parser guardrails.
 - Documented that the app does not collect, store, or process real payment card data.

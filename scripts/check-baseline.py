@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
 WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
+CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
 
 
 def require(condition, message, failures):
@@ -64,6 +65,7 @@ def main():
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-card-roulette-baseline.md",
         "docs/plans/2026-06-08-winner-input-guard.md",
+        "docs/plans/2026-06-08-table-cell-fallback.md",
         "img/app.gif",
     ]
 
@@ -98,6 +100,7 @@ def main():
     gitignore = read(".gitignore")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
+    cell_fallback_plan = CELL_FALLBACK_PLAN.read_text(encoding="utf-8") if CELL_FALLBACK_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -137,9 +140,12 @@ def main():
     require("participantItem = nil" in add_controller and "text?.stringByTrimmingCharactersInSet" in add_controller and "participantName.isEmpty" in add_controller,
             "participant entry must trim names and ignore blank input",
             failures)
-    cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell!", view_controller)
+    cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell", view_controller)
     require(cell_body is not None and "tableView.reloadData()" not in cell_body.group(0),
             "cell construction must not recursively reload the table",
+            failures)
+    require(cell_body is not None and "?? UITableViewCell(style: .Default" in cell_body.group(0) and "cell!" not in cell_body.group(0),
+            "cell construction must provide a fallback cell instead of force-unwrapping the dequeue result",
             failures)
     require("return UIColor.grayColor()" in hex_source,
             "Hex parser must keep gray fallback behavior",
@@ -158,22 +164,25 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and "winner" in readme.lower(),
-            "README must document static verification, project usage, winner guards, and payment boundary",
+    require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
+            "winner" in readme.lower() and "fallback cell" in readme.lower(),
+            "README must document static verification, project usage, winner guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-only" in vision.lower(),
+    require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and "fallback cell" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
     require("credit card" in security.lower() and "make check" in security,
             "SECURITY must document payment-data boundary and static baseline",
             failures)
-    require("empty participant" in changes.lower() and "blank" in changes.lower() and "winner" in changes.lower() and "make check" in changes,
-            "CHANGES must record the empty-list, blank-input, winner, and baseline updates",
+    require("empty participant" in changes.lower() and "blank" in changes.lower() and
+            "winner" in changes.lower() and "fallback cell" in changes.lower() and "make check" in changes,
+            "CHANGES must record the empty-list, blank-input, winner, fallback-cell, and baseline updates",
             failures)
-    require("status: completed" in baseline_plan and "status: completed" in winner_input_plan,
+    require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
+            "status: completed" in cell_fallback_plan,
             "plans must be marked completed",
             failures)
 

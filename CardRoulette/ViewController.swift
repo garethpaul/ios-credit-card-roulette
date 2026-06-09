@@ -110,25 +110,25 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let CellIndentifier: NSString = "ListPrototypeCell"
 
-        let cell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String)
+        let cell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String) ?? UITableViewCell(style: .Default, reuseIdentifier: CellIndentifier as String)
 
         let participantItem = self.players.objectAtIndex(indexPath.row) as! ParticipantListItem
 
-        cell!.textLabel?.text = participantItem.itemName as String
-        cell!.textLabel?.textColor = UIColor.blackColor()
+        cell.textLabel?.text = participantItem.itemName as String
+        cell.textLabel?.textColor = UIColor.blackColor()
 
 
         if participantItem.completed{
-            cell!.accessoryType = .Checkmark
+            cell.accessoryType = .Checkmark
         }
 
         else{
 
-            cell!.accessoryType = .None
+            cell.accessoryType = .None
 
         }
 
-        return cell!
+        return cell
     }
 
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
