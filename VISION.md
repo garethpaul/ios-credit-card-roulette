@@ -23,6 +23,7 @@ Priority:
 - Keep typed participant filtering in front of the legacy mutable player list
 - Keep participant removal guarded by row index checks
 - Keep participant table rows resilient with a fallback cell
+- Keep the card logo scoped to each navigation item title view
 - Maintain a simple Xcode project structure
 - Keep `scripts/check-baseline.py` passing for empty-list winner selection,
   local-only participant data, hex color parsing, plist/storyboard XML, and
@@ -58,8 +59,8 @@ Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 selection, shared participant-name normalization, focused XCTest assertions,
 participant unwind source handling, typed participant filtering, participant
 removal index guards, invalid hex fallback behavior, winner-screen input guards,
-fallback cell handling, local-only participant data expectations, project
-metadata, and documentation guardrails.
+fallback cell handling, navigation logo title view ownership, local-only
+participant data expectations, project metadata, and documentation guardrails.
 
 ## What We Will Not Merge (For Now)
 

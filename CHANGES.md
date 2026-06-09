@@ -6,6 +6,8 @@
   static roulette baseline.
 - Added a participant removal index guard so stale or invalid table selections
   do not mutate the legacy player list.
+- Scoped the card logo to each navigation item title view instead of adding
+  navigation-controller overlay subviews.
 
 ## 2026-06-08
 

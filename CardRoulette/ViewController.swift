@@ -105,15 +105,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         logoView = UIImageView(frame: CGRectMake(0, 0, 40, 40))
         logoView.image = UIImage(named: "cardLogo")?.imageWithRenderingMode(.AlwaysTemplate)
-        logoView.frame.origin.x = (self.view.frame.size.width - logoView.frame.size.width) / 2
-        logoView.frame.origin.y = 20
         logoView.tintColor = toColor("#F9F9F9")
-
-        // Add the logo view to the navigation controller.
-        self.navigationController?.view.addSubview(logoView)
-
-        // Bring the logo view to the front.
-        self.navigationController?.view.bringSubviewToFront(logoView)
+        self.navigationItem.titleView = logoView
 
         loadInitialData()
     }
