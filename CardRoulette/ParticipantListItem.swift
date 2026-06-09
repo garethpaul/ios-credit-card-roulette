@@ -17,5 +17,13 @@ class ParticipantListItem: NSObject{
     init(name:String){
         self.itemName = name
     }
+
+    class func normalizedName(name: String?) -> String? {
+        if let participantName = name?.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()) where !participantName.isEmpty {
+            return participantName
+        }
+
+        return nil
+    }
     
 }

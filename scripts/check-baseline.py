@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-card-roulette-baseline.md"
 WINNER_INPUT_PLAN = ROOT / "docs/plans/2026-06-08-winner-input-guard.md"
 CELL_FALLBACK_PLAN = ROOT / "docs/plans/2026-06-08-table-cell-fallback.md"
+PARTICIPANT_NORMALIZER_PLAN = ROOT / "docs/plans/2026-06-08-participant-name-normalizer.md"
 
 
 def require(condition, message, failures):
@@ -66,6 +67,7 @@ def main():
         "docs/plans/2026-06-08-card-roulette-baseline.md",
         "docs/plans/2026-06-08-winner-input-guard.md",
         "docs/plans/2026-06-08-table-cell-fallback.md",
+        "docs/plans/2026-06-08-participant-name-normalizer.md",
         "img/app.gif",
     ]
 
@@ -84,6 +86,7 @@ def main():
     test_plist = parse_plist("CardRouletteTests/Info.plist", failures)
     project = read("CardRoulette.xcodeproj/project.pbxproj")
     view_controller = read("CardRoulette/ViewController.swift")
+    tests = read("CardRouletteTests/CardRouletteTests.swift")
     active_sources = "\n".join(strip_swift_line_comments(read(path)) for path in [
         "CardRoulette/AppDelegate.swift",
         "CardRoulette/ViewController.swift",
@@ -101,6 +104,7 @@ def main():
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
     cell_fallback_plan = CELL_FALLBACK_PLAN.read_text(encoding="utf-8") if CELL_FALLBACK_PLAN.exists() else ""
+    participant_normalizer_plan = PARTICIPANT_NORMALIZER_PLAN.read_text(encoding="utf-8") if PARTICIPANT_NORMALIZER_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -110,6 +114,9 @@ def main():
             failures)
     require("ViewController.swift in Sources" in project and "INFOPLIST_FILE = CardRoulette/Info.plist" in project,
             "Xcode project must keep view controller and plist wiring",
+            failures)
+    require("ENABLE_TESTABILITY = YES;" in project and "@testable import CardRoulette" in tests,
+            "Xcode project and tests must keep CardRoulette app code testable from XCTest",
             failures)
     require("func pickAWinner() -> String?" in view_controller and "players.count == 0" in view_controller,
             "Winner selection must return nil for empty participant lists",
@@ -124,8 +131,14 @@ def main():
     require('winnerName ?? "Add participants first"' in winner_controller,
             "Winner screen must show a fallback when opened without a winner name",
             failures)
-    require("participantItem = nil" in winner_controller and "textfield?.text?.stringByTrimmingCharactersInSet" in winner_controller and "participantName.isEmpty" in winner_controller,
-            "Winner participant entry must trim names and ignore blank input",
+    participant_model = read("CardRoulette/ParticipantListItem.swift")
+    require("class func normalizedName(name: String?) -> String?" in participant_model and
+            "stringByTrimmingCharactersInSet" in participant_model and
+            "participantName.isEmpty" in participant_model and "return nil" in participant_model,
+            "ParticipantListItem must expose a shared optional name normalizer",
+            failures)
+    require("participantItem = nil" in winner_controller and "ParticipantListItem.normalizedName" in winner_controller,
+            "Winner participant entry must use the shared normalizer and ignore blank input",
             failures)
     require("textfield.text!" not in winner_controller,
             "Winner participant entry must not force-unwrap text field contents",
@@ -137,8 +150,13 @@ def main():
             "Hex parser must reject partial invalid scans",
             failures)
     add_controller = read("CardRoulette/AddParticipantViewController.swift")
-    require("participantItem = nil" in add_controller and "text?.stringByTrimmingCharactersInSet" in add_controller and "participantName.isEmpty" in add_controller,
-            "participant entry must trim names and ignore blank input",
+    require("participantItem = nil" in add_controller and "ParticipantListItem.normalizedName" in add_controller,
+            "participant entry must use the shared normalizer and ignore blank input",
+            failures)
+    require("testParticipantNameNormalizationTrimsWhitespace" in tests and "XCTAssertEqual" in tests and
+            "testParticipantNameNormalizationRejectsBlankNames" in tests and "XCTAssertNil" in tests and
+            "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
+            "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
     cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell", view_controller)
     require(cell_body is not None and "tableView.reloadData()" not in cell_body.group(0),
@@ -165,24 +183,26 @@ def main():
             ".gitignore must exclude local config and Xcode build products",
             failures)
     require("make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
-            "winner" in readme.lower() and "fallback cell" in readme.lower(),
+            "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower(),
             "README must document static verification, project usage, winner guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and "fallback cell" in vision.lower(),
+    require("scripts/check-baseline.py" in vision and "local-only" in vision.lower() and
+            "fallback cell" in vision.lower() and "normalization" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
-    require("credit card" in security.lower() and "make check" in security,
+    require("credit card" in security.lower() and "make check" in security and "normalization" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
-            "winner" in changes.lower() and "fallback cell" in changes.lower() and "make check" in changes,
-            "CHANGES must record the empty-list, blank-input, winner, fallback-cell, and baseline updates",
+            "winner" in changes.lower() and "fallback cell" in changes.lower() and
+            "normalization" in changes.lower() and "make check" in changes,
+            "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
-            "status: completed" in cell_fallback_plan,
+            "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
             "plans must be marked completed",
             failures)
 

@@ -19,6 +19,7 @@ Priority:
 - Keep the visual demo and README aligned with app behavior
 - Avoid storing real payment information
 - Keep participant input trimmed and winner display fallbacks explicit
+- Keep participant-name normalization shared and covered by focused tests
 - Keep participant table rows resilient with a fallback cell
 - Maintain a simple Xcode project structure
 - Keep `scripts/check-baseline.py` passing for empty-list winner selection,
@@ -49,9 +50,10 @@ names or payment choices should remain local unless a future design says
 otherwise.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
-It verifies empty-list winner selection, invalid hex fallback behavior,
-winner-screen input guards, fallback cell handling, local-only participant data
-expectations, project metadata, and documentation guardrails.
+It verifies empty-list winner selection, shared participant-name normalization,
+focused XCTest assertions, invalid hex fallback behavior, winner-screen input
+guards, fallback cell handling, local-only participant data expectations, project
+metadata, and documentation guardrails.
 
 ## What We Will Not Merge (For Now)
 
