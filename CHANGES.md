@@ -2,6 +2,11 @@
 
 ## 2026-06-10
 
+- Migrated the app and XCTest source from Swift 2 syntax to Swift 5.
+- Raised the deployment target from iOS 8.3 to iOS 12.
+- Replaced `arc4random_uniform` with Swift's bounded `Int.random(in:)` API.
+- Upgraded Xcode-enabled validation from project parsing to unsigned iOS
+  Simulator builds of the app and XCTest targets.
 - Guarded winner destination configuration so a storyboard miswire cannot
   force-cast a non-winner controller before assigning winner data.
 - Added pinned, read-only macOS CI for the canonical `make check` baseline.
@@ -26,7 +31,7 @@
 - Guarded participant unwind sources before reading participant items.
 - Filtered the legacy mutable player list down to typed participant entries before winner selection or row rendering.
 - Guarded winner-screen fallback text and trimmed winner-side participant input without force-unwrapping text fields.
-- Switched winner selection to `arc4random_uniform` for bounded local random selection.
+- Added bounded local random winner selection.
 - Removed table reloads from cell construction.
 - Added a fallback cell so participant rows do not force-unwrap a missing storyboard cell.
 - Rejected partial invalid hex color scans so malformed colors fall back to gray.

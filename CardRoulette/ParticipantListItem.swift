@@ -8,18 +8,19 @@
 
 import Foundation
 
-class ParticipantListItem: NSObject{
+class ParticipantListItem: NSObject {
 
-    var itemName: NSString = ""
+    var itemName = ""
     var completed: Bool = false
-    var creationDate: NSDate = NSDate()
+    var creationDate = Date()
 
-    init(name:String){
+    init(name: String) {
         self.itemName = name
+        super.init()
     }
 
-    class func normalizedName(name: String?) -> String? {
-        if let participantName = name?.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()) where !participantName.isEmpty {
+    class func normalizedName(_ name: String?) -> String? {
+        if let participantName = name?.trimmingCharacters(in: .whitespacesAndNewlines), !participantName.isEmpty {
             return participantName
         }
 

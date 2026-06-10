@@ -31,13 +31,14 @@ Priority:
   Xcode metadata
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
-- Keep pinned macOS CI parsing `CardRoulette.xcodeproj` through the canonical
-  `make check` gate
+- Keep the app and test targets on Swift 5 with the iOS 12 deployment target
+- Keep pinned macOS CI compiling the unsigned app and XCTest bundle through the
+  canonical `make check` gate
 
 Next priorities:
 
 - Add tests or manual checks for participant validation and winner selection
-- Modernize Swift/project settings in a dedicated pass
+- Add hosted XCTest execution once a shared scheme is maintained
 - Clarify that the app does not process payments
 
 Contribution rules:
@@ -65,8 +66,8 @@ removal index guards, winner destination handling, invalid hex fallback
 behavior, winner-screen input guards, fallback cell handling, navigation logo
 title view ownership, local-only
 participant data expectations, project metadata, and documentation guardrails.
-On macOS, the baseline should parse the Xcode project without running gameplay,
-persisting participants, or introducing payment behavior.
+On macOS, the baseline should compile the unsigned app and XCTest bundle without
+launching gameplay, persisting participants, or introducing payment behavior.
 
 ## What We Will Not Merge (For Now)
 

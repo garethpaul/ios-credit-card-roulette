@@ -20,6 +20,7 @@ PARTICIPANT_REMOVAL_PLAN = ROOT / "docs/plans/2026-06-09-participant-removal-ind
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 WINNER_DESTINATION_PLAN = ROOT / "docs/plans/2026-06-10-winner-destination-guard.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
+SWIFT_5_BUILD_PLAN = ROOT / "docs/plans/2026-06-10-swift-5-app-build.md"
 
 
 def require(condition, message, failures):
@@ -84,6 +85,7 @@ def main():
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
         "docs/plans/2026-06-10-winner-destination-guard.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
+        "docs/plans/2026-06-10-swift-5-app-build.md",
         "img/app.gif",
     ]
 
@@ -129,6 +131,7 @@ def main():
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
     winner_destination_plan = WINNER_DESTINATION_PLAN.read_text(encoding="utf-8") if WINNER_DESTINATION_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
+    swift_5_build_plan = SWIFT_5_BUILD_PLAN.read_text(encoding="utf-8") if SWIFT_5_BUILD_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -142,6 +145,15 @@ def main():
             failures)
     require("ENABLE_TESTABILITY = YES;" in project and "@testable import CardRoulette" in tests,
             "Xcode project and tests must keep CardRoulette app code testable from XCTest",
+            failures)
+    require(project.count("IPHONEOS_DEPLOYMENT_TARGET = 12.0;") == 2 and
+            "IPHONEOS_DEPLOYMENT_TARGET = 8.3;" not in project and
+            project.count("SWIFT_VERSION = 5.0;") == 4,
+            "Xcode project must use Swift 5 with the iOS 12 deployment target",
+            failures)
+    require("[UIApplication.LaunchOptionsKey: Any]?" in active_sources and
+            "func application(_ application: UIApplication" in active_sources,
+            "AppDelegate must use the Swift 5 launch-options signature",
             failures)
     controller_sources = {
         "ViewController": view_controller,
@@ -157,13 +169,13 @@ def main():
                 failures)
     require("func pickAWinner() -> String?" in view_controller and
             "let participantItems = self.participantItems()" in view_controller and
-            "participantItems.count == 0" in view_controller,
+            "participantItems.isEmpty" in view_controller,
             "Winner selection must return nil when no typed participants are available",
             failures)
-    require("if self.players.count > 0" in view_controller and "if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0" in view_controller,
+    require("if self.players.count > 0" in view_controller and "event?.subtype == .motionShake && self.players.count > 0" in view_controller,
             "winner actions must be blocked when there are no participants",
             failures)
-    require("func participantItemFromSegueSource(source: AnyObject?) -> ParticipantListItem?" in view_controller and
+    require("func participantItemFromSegueSource(_ source: Any?) -> ParticipantListItem?" in view_controller and
             "source as? AddParticipantViewController" in view_controller and
             "source as? WinnerViewController" in view_controller and
             "as! AddParticipantViewController" not in view_controller,
@@ -172,9 +184,9 @@ def main():
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
             failures)
-    require("func configureWinnerDestination(destination: AnyObject) -> Bool" in view_controller and
+    require("func configureWinnerDestination(_ destination: Any) -> Bool" in view_controller and
             "destination as? WinnerViewController" in view_controller and
-            "configureWinnerDestination(segue.destinationViewController)" in view_controller and
+            "configureWinnerDestination(segue.destination)" in view_controller and
             "segue.destinationViewController as! WinnerViewController" not in view_controller,
             "Winner segue destination must be type-checked before configuration",
             failures)
@@ -183,8 +195,8 @@ def main():
             "Winner screen must show a fallback when opened without a winner name",
             failures)
     participant_model = read("CardRoulette/ParticipantListItem.swift")
-    require("class func normalizedName(name: String?) -> String?" in participant_model and
-            "stringByTrimmingCharactersInSet" in participant_model and
+    require("class func normalizedName(_ name: String?) -> String?" in participant_model and
+            "trimmingCharacters(in: .whitespacesAndNewlines)" in participant_model and
             "participantName.isEmpty" in participant_model and "return nil" in participant_model,
             "ParticipantListItem must expose a shared optional name normalizer",
             failures)
@@ -195,21 +207,22 @@ def main():
             "Winner participant entry must not force-unwrap text field contents",
             failures)
     require("func participantItems() -> [ParticipantListItem]" in view_controller and
-            "objectAtIndex(index) as? ParticipantListItem" in view_controller and
-            "arc4random_uniform(UInt32(participantItems.count))" in view_controller and
+            "object(at: index) as? ParticipantListItem" in view_controller and
+            "Int.random(in: participantItems.indices)" in view_controller and
+            "arc4random_uniform" not in view_controller and
             "self.players.objectAtIndex(Int(randomIndex)) as!" not in view_controller,
             "Winner selection must filter the legacy player array before bounded random participant selection",
             failures)
-    require("func participantItemAtIndex(index: Int) -> ParticipantListItem?" in view_controller and
-            "return self.players.objectAtIndex(index) as? ParticipantListItem" in view_controller,
+    require("func participantItemAtIndex(_ index: Int) -> ParticipantListItem?" in view_controller and
+            "return self.players.object(at: index) as? ParticipantListItem" in view_controller,
             "Participant table rendering must use a guarded participant accessor",
             failures)
-    require("func removeParticipantAtIndex(index: Int) -> Bool" in view_controller and
-            "self.players.removeObjectAtIndex(index)" in view_controller and
+    require("func removeParticipantAtIndex(_ index: Int) -> Bool" in view_controller and
+            "self.players.removeObject(at: index)" in view_controller and
             "if self.removeParticipantAtIndex(indexPath.row)" in view_controller,
             "Participant row deletion must use a guarded removal helper",
             failures)
-    require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
+    require("let scanner = Scanner(string: cString)" in hex_source and "scanner.isAtEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
             failures)
     add_controller = read("CardRoulette/AddParticipantViewController.swift")
@@ -231,14 +244,14 @@ def main():
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
-    cell_body = re.search(r"cellForRowAtIndexPath[\s\S]+?return cell", view_controller)
+    cell_body = re.search(r"cellForRowAt[\s\S]+?return cell", view_controller)
     require(cell_body is not None and "tableView.reloadData()" not in cell_body.group(0),
             "cell construction must not recursively reload the table",
             failures)
-    require(cell_body is not None and "?? UITableViewCell(style: .Default" in cell_body.group(0) and "cell!" not in cell_body.group(0),
+    require(cell_body is not None and "?? UITableViewCell(style: .default" in cell_body.group(0) and "cell!" not in cell_body.group(0),
             "cell construction must provide a fallback cell instead of force-unwrapping the dequeue result",
             failures)
-    require("return UIColor.grayColor()" in hex_source,
+    require("return .gray" in hex_source,
             "Hex parser must keep gray fallback behavior",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", active_sources),
@@ -313,6 +326,9 @@ def main():
     require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
             "hosted project validation plan must be completed and document make check",
             failures)
+    require("status: completed" in swift_5_build_plan and "simulator" in swift_5_build_plan.lower(),
+            "Swift 5 app build plan must be completed and document simulator verification",
+            failures)
     require("permissions:\n  contents: read" in workflow,
             "Check workflow must use read-only repository permissions",
             failures)
@@ -327,14 +343,22 @@ def main():
 
     if shutil.which("xcodebuild"):
         result = subprocess.run(
-            ["xcodebuild", "-list", "-project", "CardRoulette.xcodeproj"],
+            [
+                "xcodebuild",
+                "-project", "CardRoulette.xcodeproj",
+                "-target", "CardRouletteTests",
+                "-configuration", "Debug",
+                "-sdk", "iphonesimulator",
+                "CODE_SIGNING_ALLOWED=NO",
+                "build",
+            ],
             cwd=ROOT,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
         )
         require(result.returncode == 0,
-                "xcodebuild could not parse CardRoulette.xcodeproj: " + result.stderr.strip(),
+                "xcodebuild could not compile CardRoulette and its tests for the simulator: " + result.stdout.strip(),
                 failures)
     else:
         print("xcodebuild unavailable; static iOS baseline only.")
