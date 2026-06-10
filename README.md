@@ -80,6 +80,11 @@ stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
+The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
+available, the baseline also runs `xcodebuild -list` against
+`CardRoulette.xcodeproj` to verify project-file integrity. It does not execute
+gameplay, persist participant data, or perform payment processing.
+
 For full legacy verification on macOS, use Xcode's test action or `xcodebuild test` with the appropriate scheme and destination.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.

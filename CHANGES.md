@@ -4,6 +4,9 @@
 
 - Guarded winner destination configuration so a storyboard miswire cannot
   force-cast a non-winner controller before assigning winner data.
+- Added pinned, read-only macOS CI for the canonical `make check` baseline.
+- Made Xcode-enabled checks parse `CardRoulette.xcodeproj` without executing
+  gameplay, persisting participant data, or adding payment behavior.
 
 ## 2026-06-09
 

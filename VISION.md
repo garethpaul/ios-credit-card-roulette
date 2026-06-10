@@ -31,6 +31,8 @@ Priority:
   Xcode metadata
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
+- Keep pinned macOS CI parsing `CardRoulette.xcodeproj` through the canonical
+  `make check` gate
 
 Next priorities:
 
@@ -63,6 +65,8 @@ removal index guards, winner destination handling, invalid hex fallback
 behavior, winner-screen input guards, fallback cell handling, navigation logo
 title view ownership, local-only
 participant data expectations, project metadata, and documentation guardrails.
+On macOS, the baseline should parse the Xcode project without running gameplay,
+persisting participants, or introducing payment behavior.
 
 ## What We Will Not Merge (For Now)
 
