@@ -17,6 +17,7 @@ UNWIND_SOURCE_PLAN = ROOT / "docs/plans/2026-06-09-unwind-source-guard.md"
 PARTICIPANT_ARRAY_PLAN = ROOT / "docs/plans/2026-06-09-participant-array-type-guard.md"
 PARTICIPANT_REMOVAL_PLAN = ROOT / "docs/plans/2026-06-09-participant-removal-index-guard.md"
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
+WINNER_DESTINATION_PLAN = ROOT / "docs/plans/2026-06-10-winner-destination-guard.md"
 
 
 def require(condition, message, failures):
@@ -78,6 +79,7 @@ def main():
         "docs/plans/2026-06-09-participant-array-type-guard.md",
         "docs/plans/2026-06-09-participant-removal-index-guard.md",
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
+        "docs/plans/2026-06-10-winner-destination-guard.md",
         "img/app.gif",
     ]
 
@@ -121,6 +123,7 @@ def main():
     participant_array_plan = PARTICIPANT_ARRAY_PLAN.read_text(encoding="utf-8") if PARTICIPANT_ARRAY_PLAN.exists() else ""
     participant_removal_plan = PARTICIPANT_REMOVAL_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_PLAN.exists() else ""
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
+    winner_destination_plan = WINNER_DESTINATION_PLAN.read_text(encoding="utf-8") if WINNER_DESTINATION_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -162,6 +165,12 @@ def main():
             failures)
     require("Add participants first" in view_controller,
             "Winner segue must provide a fallback for empty participant lists",
+            failures)
+    require("func configureWinnerDestination(destination: AnyObject) -> Bool" in view_controller and
+            "destination as? WinnerViewController" in view_controller and
+            "configureWinnerDestination(segue.destinationViewController)" in view_controller and
+            "segue.destinationViewController as! WinnerViewController" not in view_controller,
+            "Winner segue destination must be type-checked before configuration",
             failures)
     winner_controller = read("CardRoulette/WinnerViewController.swift")
     require('winnerName ?? "Add participants first"' in winner_controller,
@@ -210,6 +219,9 @@ def main():
             "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
             "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
+            "testConfigureWinnerDestinationRejectsUnexpectedDestination" in tests and
+            "testConfigureWinnerDestinationSetsFallbackWithoutParticipants" in tests and
+            "testConfigureWinnerDestinationSetsTypedParticipantWinner" in tests and
             "XCTAssert(true" not in tests and "testPerformanceExample" not in tests,
             "CardRouletteTests must replace template tests with participant-name normalization assertions",
             failures)
@@ -242,7 +254,8 @@ def main():
             failures)
     require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
             "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
-            "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower() and "title view" in readme.lower(),
+            "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower() and
+            "winner destination" in readme.lower() and "title view" in readme.lower(),
             "README must document static verification, project usage, winner guards, typed participant guards, cell fallback, and payment boundary",
             failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
@@ -250,17 +263,20 @@ def main():
             failures)
     require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-only" in vision.lower() and
             "fallback cell" in vision.lower() and "normalization" in vision.lower() and
-            "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower() and "title view" in vision.lower(),
+            "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower() and
+            "winner destination" in vision.lower() and "title view" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
     require("credit card" in security.lower() and "make check" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
-            "typed participant" in security.lower() and "participant removal" in security.lower() and "title view" in security.lower(),
+            "typed participant" in security.lower() and "participant removal" in security.lower() and
+            "winner destination" in security.lower() and "title view" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
     require("empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and "title view" in changes.lower() and
-            "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
+            "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and
+            "winner destination" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record the empty-list, blank-input, winner, normalization, fallback-cell, and baseline updates",
             failures)
     require("typed participant" in changes.lower(),
@@ -284,6 +300,9 @@ def main():
             failures)
     require("status: completed" in nav_logo_plan,
             "navigation logo title-view plan must be marked completed",
+            failures)
+    require("status: completed" in winner_destination_plan,
+            "winner destination guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

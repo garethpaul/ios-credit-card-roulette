@@ -116,14 +116,23 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         // Create a variable that you want to send
 
         if (segue.identifier == "presentWinner"){
-            let winnerVC = segue.destinationViewController as! WinnerViewController
+            configureWinnerDestination(segue.destinationViewController)
+        }
+
+    }
+
+    func configureWinnerDestination(destination: AnyObject) -> Bool {
+        if let winnerVC = destination as? WinnerViewController {
             if let winnerName = pickAWinner() {
                 winnerVC.winnerName = winnerName
             } else {
                 winnerVC.winnerName = "Add participants first"
             }
+
+            return true
         }
-            
+
+        return false
     }
 
     func loadInitialData(){

@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Guarded winner destination configuration so a storyboard miswire cannot
+  force-cast a non-winner controller before assigning winner data.
+
 ## 2026-06-09
 
 - Added local `make lint`, `make test`, and `make build` gate aliases for the

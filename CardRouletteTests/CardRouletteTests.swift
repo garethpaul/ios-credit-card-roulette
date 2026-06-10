@@ -82,4 +82,28 @@ class CardRouletteTests: XCTestCase {
         XCTAssertEqual(controller.players.count, 1, "Invalid participant indexes should leave the player list unchanged")
     }
 
+    func testConfigureWinnerDestinationRejectsUnexpectedDestination() {
+        let controller = ViewController()
+
+        XCTAssertFalse(controller.configureWinnerDestination(UIViewController()), "Unexpected winner destinations should be ignored")
+    }
+
+    func testConfigureWinnerDestinationSetsFallbackWithoutParticipants() {
+        let controller = ViewController()
+        let winner = WinnerViewController()
+
+        XCTAssertTrue(controller.configureWinnerDestination(winner), "Winner destinations should be configured when the segue is wired correctly")
+        XCTAssertEqual(winner.winnerName!, "Add participants first", "Empty participant lists should keep a visible fallback winner message")
+    }
+
+    func testConfigureWinnerDestinationSetsTypedParticipantWinner() {
+        let controller = ViewController()
+        let winner = WinnerViewController()
+        controller.players.addObject(NSString(string: "invalid"))
+        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertTrue(controller.configureWinnerDestination(winner), "Winner destinations should accept valid winner controllers")
+        XCTAssertEqual(winner.winnerName!, "Hemal", "Winner destinations should receive a typed participant winner")
+    }
+
 }
