@@ -80,13 +80,18 @@ stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
-The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
-available, the baseline also compiles the unsigned Swift 5 app and XCTest bundle
-for the iOS Simulator. It does not launch gameplay, persist participant data,
-perform payment processing, or use signing material.
+The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
+the static baseline, then compiles the unsigned Swift 5 app and executes twelve
+participant normalization, array-safety, removal, unwind, and winner-destination
+tests on an available iPhone simulator. It does not persist or upload participant
+data, perform payment processing, deploy, or use signing material.
 
 For runtime verification on macOS, launch the sample in a simulator and exercise
 participant entry, removal, and winner selection without entering payment data.
+
+GitHub Actions runs the same Python static `make check` baseline on Ubuntu for
+pushes and pull requests. Full simulator and device verification remains a
+macOS Xcode task.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -112,6 +117,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-navigation-logo-title-view.md` for the navigation logo title view guardrail.
 - See `docs/plans/2026-06-10-winner-destination-guard.md` for the winner destination guardrail.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the GitHub Actions static
+  baseline.
+- See `docs/plans/2026-06-12-hosted-xctest.md` for the shared scheme,
+  simulator discovery, and hosted XCTest gate.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing

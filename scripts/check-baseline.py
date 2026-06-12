@@ -19,8 +19,48 @@ PARTICIPANT_ARRAY_PLAN = ROOT / "docs/plans/2026-06-09-participant-array-type-gu
 PARTICIPANT_REMOVAL_PLAN = ROOT / "docs/plans/2026-06-09-participant-removal-index-guard.md"
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 WINNER_DESTINATION_PLAN = ROOT / "docs/plans/2026-06-10-winner-destination-guard.md"
+CI_PLAN = ROOT / "docs/plans/2026-06-10-ci-baseline.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 SWIFT_5_BUILD_PLAN = ROOT / "docs/plans/2026-06-10-swift-5-app-build.md"
+HOSTED_XCTEST_PLAN = ROOT / "docs/plans/2026-06-12-hosted-xctest.md"
+EXPECTED_WORKFLOW = """name: Check
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Validate roulette baseline and XCTest
+        run: make test
+"""
+EXPECTED_MAKEFILE = """.PHONY: build check lint test
+
+lint: check
+
+test: check
+\t@if command -v xcodebuild >/dev/null 2>&1; then ./scripts/run-tests.sh; else printf '%s\\n' "Skipping XCTest: xcodebuild is not installed."; fi
+
+build: check
+
+check:
+\tpython3 scripts/check-baseline.py
+"""
 
 
 def require(condition, message, failures):
@@ -33,7 +73,26 @@ def read(relative_path):
 
 
 def strip_swift_line_comments(text):
-    return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+    stripped_lines = []
+    for line in text.splitlines():
+        output = []
+        in_string = False
+        escaped = False
+        index = 0
+        while index < len(line):
+            character = line[index]
+            if not in_string and character == "/" and index + 1 < len(line) and line[index + 1] == "/":
+                break
+            output.append(character)
+            if character == '"' and not escaped:
+                in_string = not in_string
+            if character == "\\":
+                escaped = not escaped
+            else:
+                escaped = False
+            index += 1
+        stripped_lines.append("".join(output))
+    return "\n".join(stripped_lines)
 
 
 def parse_xml(relative_path, failures):
@@ -54,7 +113,13 @@ def parse_plist(relative_path, failures):
 
 def main():
     failures = []
+    swift_comment_fixture = 'let endpoint = "http://example.com/path" // trailing comment'
+    require(strip_swift_line_comments(swift_comment_fixture) ==
+            'let endpoint = "http://example.com/path" ',
+            "Swift comment stripping must preserve quoted URL strings",
+            failures)
     required_files = [
+        ".github/workflows/check.yml",
         ".gitignore",
         ".github/workflows/check.yml",
         "CHANGES.md",
@@ -64,6 +129,7 @@ def main():
         "VISION.md",
         "CardRoulette.xcodeproj/project.pbxproj",
         "CardRoulette.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "CardRoulette.xcodeproj/xcshareddata/xcschemes/CardRoulette.xcscheme",
         "CardRoulette/Info.plist",
         "CardRoulette/AppDelegate.swift",
         "CardRoulette/ViewController.swift",
@@ -84,9 +150,12 @@ def main():
         "docs/plans/2026-06-09-participant-removal-index-guard.md",
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
         "docs/plans/2026-06-10-winner-destination-guard.md",
+        "docs/plans/2026-06-10-ci-baseline.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-swift-5-app-build.md",
+        "docs/plans/2026-06-12-hosted-xctest.md",
         "img/app.gif",
+        "scripts/run-tests.sh",
     ]
 
     for relative_path in required_files:
@@ -94,6 +163,7 @@ def main():
 
     for xml_file in [
         "CardRoulette.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "CardRoulette.xcodeproj/xcshareddata/xcschemes/CardRoulette.xcscheme",
         "CardRoulette/Base.lproj/Main.storyboard",
         "CardRoulette/Base.lproj/LaunchScreen.xib",
         "docs/readme-overview.svg",
@@ -120,6 +190,8 @@ def main():
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
     makefile = read("Makefile")
+    test_runner = read("scripts/run-tests.sh")
+    shared_scheme = read("CardRoulette.xcodeproj/xcshareddata/xcschemes/CardRoulette.xcscheme")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     winner_input_plan = WINNER_INPUT_PLAN.read_text(encoding="utf-8") if WINNER_INPUT_PLAN.exists() else ""
@@ -130,9 +202,16 @@ def main():
     participant_removal_plan = PARTICIPANT_REMOVAL_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_PLAN.exists() else ""
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
     winner_destination_plan = WINNER_DESTINATION_PLAN.read_text(encoding="utf-8") if WINNER_DESTINATION_PLAN.exists() else ""
+    ci_plan = CI_PLAN.read_text(encoding="utf-8") if CI_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     swift_5_build_plan = SWIFT_5_BUILD_PLAN.read_text(encoding="utf-8") if SWIFT_5_BUILD_PLAN.exists() else ""
+    hosted_xctest_plan = HOSTED_XCTEST_PLAN.read_text(encoding="utf-8") if HOSTED_XCTEST_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
+
+    subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
+    require((ROOT / "scripts/run-tests.sh").stat().st_mode & 0o111,
+            "scripts/run-tests.sh must be executable",
+            failures)
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -257,9 +336,14 @@ def main():
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", active_sources),
             "Participant/payment state must not be logged",
             failures)
-    for forbidden in ["URLSession", "NSURLConnection", "NSURL", "http://", "https://", "UserDefaults", "writeToFile", "creditCardNumber"]:
+    for forbidden in ["URLSession", "NSURLConnection", "NSURL", "http://", "https://", "UserDefaults", "writeToFile"]:
         require(forbidden not in active_sources,
                 f"Roulette sample must not add network, persistence, or card-data handling: {forbidden}",
+                failures)
+    active_sources_lower = active_sources.lower()
+    for forbidden in ["creditcardnumber", "paymentprocessor", "storekit", "passkit", "pkpayment", "stripe", "braintree"]:
+        require(forbidden not in active_sources_lower,
+                f"Roulette sample must not add payment processing: {forbidden}",
                 failures)
     swift_files = sorted((ROOT / "CardRoulette").rglob("*.swift")) + sorted((ROOT / "CardRouletteTests").rglob("*.swift"))
     require(len(swift_files) >= 7,
@@ -268,10 +352,24 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
-            "Makefile must expose lint, test, and build aliases for the local baseline",
+    require(makefile == EXPECTED_MAKEFILE,
+            "Makefile must exactly preserve static and XCTest verification gates",
             failures)
-    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
+    require("xcrun simctl list devices available" in test_runner and
+            "IOS_DESTINATION" in test_runner and "IOS_SIMULATOR_NAME" in test_runner and
+            '-scheme "$SCHEME"' in test_runner and '-destination "$DESTINATION"' in test_runner and
+            "CODE_SIGNING_ALLOWED=NO" in test_runner and "test" in test_runner,
+            "test runner must discover or accept a simulator and execute unsigned XCTest",
+            failures)
+    require("iPhone 5" not in test_runner,
+            "test runner must not use a retired fixed simulator",
+            failures)
+    require(shared_scheme.count('BlueprintIdentifier = "FDAE1E6E1B1A487600A89C51"') >= 2 and
+            shared_scheme.count('BlueprintIdentifier = "FDAE1E831B1A487600A89C51"') >= 2 and
+            '<TestableReference' in shared_scheme and 'skipped = "NO"' in shared_scheme,
+            "shared scheme must build the app and execute CardRouletteTests",
+            failures)
+    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "GitHub Actions" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
             "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
             "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower() and
             "winner destination" in readme.lower() and "title view" in readme.lower(),
@@ -280,19 +378,19 @@ def main():
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
-    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-only" in vision.lower() and
+    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "GitHub Actions" in vision and "local-only" in vision.lower() and
             "fallback cell" in vision.lower() and "normalization" in vision.lower() and
             "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower() and
             "winner destination" in vision.lower() and "title view" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
-    require("credit card" in security.lower() and "make check" in security and
+    require("credit card" in security.lower() and "make check" in security and "GitHub Actions" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
             "typed participant" in security.lower() and "participant removal" in security.lower() and
             "winner destination" in security.lower() and "title view" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
-    require("empty participant" in changes.lower() and "blank" in changes.lower() and
+    require("GitHub Actions" in changes and "empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and "title view" in changes.lower() and
             "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and
             "winner destination" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
@@ -323,34 +421,29 @@ def main():
     require("status: completed" in winner_destination_plan,
             "winner destination guard plan must be marked completed",
             failures)
+    require("status: completed" in ci_plan and "GitHub Actions" in ci_plan and "make check" in ci_plan,
+            "CI baseline plan must record hosted make check verification",
+            failures)
     require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
             "hosted project validation plan must be completed and document make check",
             failures)
     require("status: completed" in swift_5_build_plan and "simulator" in swift_5_build_plan.lower(),
             "Swift 5 app build plan must be completed and document simulator verification",
             failures)
-    require("permissions:\n  contents: read" in workflow,
-            "Check workflow must use read-only repository permissions",
+    require("status: completed" in hosted_xctest_plan and "make test" in hosted_xctest_plan and
+            "hosted macOS XCTest run" in hosted_xctest_plan,
+            "hosted XCTest plan must record the completed executable test contract",
             failures)
-    require("cancel-in-progress: true" in workflow and "runs-on: macos-15" in workflow and
-            "timeout-minutes: 10" in workflow,
-            "Check workflow must bound duplicate and long-running macOS jobs",
-            failures)
-    require("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow and
-            "run: make check" in workflow,
-            "Check workflow must pin checkout and run the canonical baseline",
+    require(workflow == EXPECTED_WORKFLOW,
+            "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",
             failures)
 
     if shutil.which("xcodebuild"):
         result = subprocess.run(
             [
                 "xcodebuild",
+                "-list",
                 "-project", "CardRoulette.xcodeproj",
-                "-target", "CardRouletteTests",
-                "-configuration", "Debug",
-                "-sdk", "iphonesimulator",
-                "CODE_SIGNING_ALLOWED=NO",
-                "build",
             ],
             cwd=ROOT,
             stdout=subprocess.PIPE,
@@ -358,7 +451,7 @@ def main():
             text=True,
         )
         require(result.returncode == 0,
-                "xcodebuild could not compile CardRoulette and its tests for the simulator: " + result.stdout.strip(),
+                "xcodebuild could not parse the CardRoulette project: " + result.stdout.strip(),
                 failures)
     else:
         print("xcodebuild unavailable; static iOS baseline only.")
