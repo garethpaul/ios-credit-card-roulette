@@ -82,6 +82,14 @@ class CardRouletteTests: XCTestCase {
         XCTAssertEqual(controller.players.count, 1, "Invalid participant indexes should leave the player list unchanged")
     }
 
+    func testRemoveParticipantAtIndexRejectsInvalidEntryType() {
+        let controller = ViewController()
+        controller.players.add(NSString(string: "invalid"))
+
+        XCTAssertFalse(controller.removeParticipantAtIndex(0), "Non-participant entries should not be removed through participant actions")
+        XCTAssertEqual(controller.players.count, 1, "Rejected entries should remain untouched")
+    }
+
     func testConfigureWinnerDestinationRejectsUnexpectedDestination() {
         let controller = ViewController()
 
