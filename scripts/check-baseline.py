@@ -73,6 +73,14 @@ def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
 
 
+def markdown_section(text, heading):
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+    )
+    return match.group(1).strip() if match else ""
+
+
 def strip_swift_line_comments(text):
     stripped_lines = []
     for line in text.splitlines():
@@ -439,9 +447,43 @@ def main():
             "hosted macOS XCTest run" in hosted_xctest_plan,
             "hosted XCTest plan must record the completed executable test contract",
             failures)
-    require("status: completed" in participant_removal_type_plan and "mutation" in participant_removal_type_plan.lower(),
-            "participant removal type-guard plan must record completed mutation verification",
+    participant_removal_type_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan
+    )
+    participant_removal_type_work = markdown_section(
+        participant_removal_type_plan, "Work Completed"
+    )
+    participant_removal_type_verification = markdown_section(
+        participant_removal_type_plan, "Verification Completed"
+    )
+    require(participant_removal_type_status == ["completed"] and
+            participant_removal_type_work,
+            "participant removal type-guard plan must record one completed status and completed work",
             failures)
+    require(participant_removal_type_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", participant_removal_type_verification),
+            "participant removal type-guard plan must record finished verification without pending markers",
+            failures)
+    for evidence in [
+        "make check",
+        "make lint",
+        "make test",
+        "make build",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n scripts/run-tests.sh",
+        "git diff --check",
+        "27394766979",
+        "27394770140",
+        "27394960091",
+        "27402323075",
+        "73dd879cbcd09553aa11d6f4cc4257b02fc62cea",
+        "041c56d77acfd534eab38eda6c9308b01e7582b6",
+        "object(at: index) is ParticipantListItem",
+        "testRemoveParticipantAtIndexRejectsInvalidEntryType",
+    ]:
+        require(evidence in participant_removal_type_verification,
+                f"participant removal type-guard plan must preserve verification evidence: {evidence}",
+                failures)
     require(workflow == EXPECTED_WORKFLOW,
             "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",
             failures)
