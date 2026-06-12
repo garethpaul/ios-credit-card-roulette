@@ -2,6 +2,11 @@
 
 ## 2026-06-12
 
+- Rejected non-participant objects from participant row removal while preserving
+  existing index guards.
+
+## 2026-06-12
+
 - Added a shared Xcode scheme and portable simulator discovery so hosted macOS
   CI executes the existing twelve-case XCTest suite through `make test`.
 - Disabled persisted checkout credentials and retained unsigned execution

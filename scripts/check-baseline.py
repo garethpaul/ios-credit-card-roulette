@@ -23,6 +23,7 @@ CI_PLAN = ROOT / "docs/plans/2026-06-10-ci-baseline.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 SWIFT_5_BUILD_PLAN = ROOT / "docs/plans/2026-06-10-swift-5-app-build.md"
 HOSTED_XCTEST_PLAN = ROOT / "docs/plans/2026-06-12-hosted-xctest.md"
+PARTICIPANT_REMOVAL_TYPE_PLAN = ROOT / "docs/plans/2026-06-12-participant-removal-type-guard.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -154,6 +155,7 @@ def main():
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-swift-5-app-build.md",
         "docs/plans/2026-06-12-hosted-xctest.md",
+        "docs/plans/2026-06-12-participant-removal-type-guard.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -206,6 +208,7 @@ def main():
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     swift_5_build_plan = SWIFT_5_BUILD_PLAN.read_text(encoding="utf-8") if SWIFT_5_BUILD_PLAN.exists() else ""
     hosted_xctest_plan = HOSTED_XCTEST_PLAN.read_text(encoding="utf-8") if HOSTED_XCTEST_PLAN.exists() else ""
+    participant_removal_type_plan = PARTICIPANT_REMOVAL_TYPE_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_TYPE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -297,6 +300,7 @@ def main():
             "Participant table rendering must use a guarded participant accessor",
             failures)
     require("func removeParticipantAtIndex(_ index: Int) -> Bool" in view_controller and
+            "object(at: index) is ParticipantListItem" in view_controller and
             "self.players.removeObject(at: index)" in view_controller and
             "if self.removeParticipantAtIndex(indexPath.row)" in view_controller,
             "Participant row deletion must use a guarded removal helper",
@@ -317,6 +321,7 @@ def main():
             "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
             "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
+            "testRemoveParticipantAtIndexRejectsInvalidEntryType" in tests and
             "testConfigureWinnerDestinationRejectsUnexpectedDestination" in tests and
             "testConfigureWinnerDestinationSetsFallbackWithoutParticipants" in tests and
             "testConfigureWinnerDestinationSetsTypedParticipantWinner" in tests and
@@ -433,6 +438,9 @@ def main():
     require("status: completed" in hosted_xctest_plan and "make test" in hosted_xctest_plan and
             "hosted macOS XCTest run" in hosted_xctest_plan,
             "hosted XCTest plan must record the completed executable test contract",
+            failures)
+    require("status: completed" in participant_removal_type_plan and "mutation" in participant_removal_type_plan.lower(),
+            "participant removal type-guard plan must record completed mutation verification",
             failures)
     require(workflow == EXPECTED_WORKFLOW,
             "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",

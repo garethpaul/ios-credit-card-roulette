@@ -85,6 +85,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if index < 0 || index >= self.players.count {
             return false
         }
+        guard self.players.object(at: index) is ParticipantListItem else {
+            return false
+        }
 
         self.players.removeObject(at: index)
         return true

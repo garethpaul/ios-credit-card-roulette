@@ -1,6 +1,6 @@
 # Participant Removal Type Guard
 
-status: planned
+status: completed
 
 ## Context
 
@@ -9,7 +9,7 @@ Participant lookup and winner selection ignore objects that are not
 object. Corrupted or legacy array entries can therefore be mutated through a
 participant-only action even though the rest of the UI rejects them.
 
-## Scope
+## Completed Scope
 
 - Require the indexed object to be a `ParticipantListItem` before removal.
 - Preserve existing negative and out-of-range index handling.
