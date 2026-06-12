@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Added a GitHub Actions workflow that runs the SDK-free `make check` baseline
+  for the local-only participant and payment-boundary sample.
 - Guarded winner destination configuration so a storyboard miswire cannot
   force-cast a non-winner controller before assigning winner data.
 

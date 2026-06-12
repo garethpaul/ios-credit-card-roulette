@@ -18,6 +18,8 @@ PARTICIPANT_ARRAY_PLAN = ROOT / "docs/plans/2026-06-09-participant-array-type-gu
 PARTICIPANT_REMOVAL_PLAN = ROOT / "docs/plans/2026-06-09-participant-removal-index-guard.md"
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 WINNER_DESTINATION_PLAN = ROOT / "docs/plans/2026-06-10-winner-destination-guard.md"
+CI_WORKFLOW = ROOT / ".github/workflows/check.yml"
+CI_PLAN = ROOT / "docs/plans/2026-06-10-ci-baseline.md"
 
 
 def require(condition, message, failures):
@@ -52,6 +54,7 @@ def parse_plist(relative_path, failures):
 def main():
     failures = []
     required_files = [
+        ".github/workflows/check.yml",
         ".gitignore",
         "CHANGES.md",
         "Makefile",
@@ -80,6 +83,7 @@ def main():
         "docs/plans/2026-06-09-participant-removal-index-guard.md",
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
         "docs/plans/2026-06-10-winner-destination-guard.md",
+        "docs/plans/2026-06-10-ci-baseline.md",
         "img/app.gif",
     ]
 
@@ -124,6 +128,8 @@ def main():
     participant_removal_plan = PARTICIPANT_REMOVAL_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_PLAN.exists() else ""
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
     winner_destination_plan = WINNER_DESTINATION_PLAN.read_text(encoding="utf-8") if WINNER_DESTINATION_PLAN.exists() else ""
+    ci_workflow = CI_WORKFLOW.read_text(encoding="utf-8") if CI_WORKFLOW.exists() else ""
+    ci_plan = CI_PLAN.read_text(encoding="utf-8") if CI_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -252,7 +258,10 @@ def main():
     require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
             "Makefile must expose lint, test, and build aliases for the local baseline",
             failures)
-    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
+    require("actions/setup-python@v5" in ci_workflow and 'python-version: "3.12"' in ci_workflow and "make check" in ci_workflow,
+            "GitHub Actions workflow must run the Python static make check baseline",
+            failures)
+    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "GitHub Actions" in readme and "CardRoulette.xcodeproj" in readme and "does not process payments" in readme and
             "winner" in readme.lower() and "fallback cell" in readme.lower() and "normalization" in readme.lower() and
             "unwind" in readme.lower() and "typed participant" in readme.lower() and "participant removal" in readme.lower() and
             "winner destination" in readme.lower() and "title view" in readme.lower(),
@@ -261,19 +270,19 @@ def main():
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
-    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-only" in vision.lower() and
+    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "GitHub Actions" in vision and "local-only" in vision.lower() and
             "fallback cell" in vision.lower() and "normalization" in vision.lower() and
             "unwind" in vision.lower() and "typed participant" in vision.lower() and "participant removal" in vision.lower() and
             "winner destination" in vision.lower() and "title view" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
-    require("credit card" in security.lower() and "make check" in security and
+    require("credit card" in security.lower() and "make check" in security and "GitHub Actions" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
             "typed participant" in security.lower() and "participant removal" in security.lower() and
             "winner destination" in security.lower() and "title view" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
             failures)
-    require("empty participant" in changes.lower() and "blank" in changes.lower() and
+    require("GitHub Actions" in changes and "empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and "title view" in changes.lower() and
             "normalization" in changes.lower() and "unwind" in changes.lower() and "participant removal" in changes.lower() and
             "winner destination" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
@@ -303,6 +312,9 @@ def main():
             failures)
     require("status: completed" in winner_destination_plan,
             "winner destination guard plan must be marked completed",
+            failures)
+    require("status: completed" in ci_plan and "GitHub Actions" in ci_plan and "make check" in ci_plan,
+            "CI baseline plan must record hosted make check verification",
             failures)
 
     if shutil.which("xcodebuild"):
