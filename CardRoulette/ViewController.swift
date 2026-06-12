@@ -19,15 +19,15 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     @IBOutlet var tableView: UITableView!
 
-    @IBAction func unwindToList(segue:UIStoryboardSegue){
-        if let item: ParticipantListItem = participantItemFromSegueSource(segue.sourceViewController){
-            self.players.addObject(item)
+    @IBAction func unwindToList(_ segue: UIStoryboardSegue) {
+        if let item = participantItemFromSegueSource(segue.source) {
+            self.players.add(item)
             self.tableView.reloadData()
         }
 
     }
 
-    func participantItemFromSegueSource(source: AnyObject?) -> ParticipantListItem? {
+    func participantItemFromSegueSource(_ source: Any?) -> ParticipantListItem? {
         if let addParticipantSource = source as? AddParticipantViewController {
             return addParticipantSource.participantItem
         }
@@ -41,34 +41,31 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var players: NSMutableArray = []
     var logoView: UIImageView!
 
-    @IBAction func clickBtn(sender: AnyObject) {
+    @IBAction func clickBtn(_ sender: Any) {
         if self.players.count > 0 {
-            self.performSegueWithIdentifier("presentWinner", sender: self)
+            self.performSegue(withIdentifier: "presentWinner", sender: self)
         }
     }
 
-    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
-        if let event = event where event.subtype == UIEventSubtype.MotionShake && self.players.count > 0 {
-            self.performSegueWithIdentifier("presentWinner", sender: self)
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if event?.subtype == .motionShake && self.players.count > 0 {
+            self.performSegue(withIdentifier: "presentWinner", sender: self)
         }
     }
 
     func pickAWinner() -> String? {
         let participantItems = self.participantItems()
-        if participantItems.count == 0 {
+        if participantItems.isEmpty {
             return nil
         }
-        let randomIndex = arc4random_uniform(UInt32(participantItems.count))
-        let winner = participantItems[Int(randomIndex)]
-        let winnerName = winner.itemName as String
-        return winnerName
+        return participantItems[Int.random(in: participantItems.indices)].itemName
     }
 
     func participantItems() -> [ParticipantListItem] {
         var participantItems: [ParticipantListItem] = []
 
         for index in 0..<self.players.count {
-            if let participantItem = self.players.objectAtIndex(index) as? ParticipantListItem {
+            if let participantItem = self.players.object(at: index) as? ParticipantListItem {
                 participantItems.append(participantItem)
             }
         }
@@ -76,20 +73,20 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         return participantItems
     }
 
-    func participantItemAtIndex(index: Int) -> ParticipantListItem? {
+    func participantItemAtIndex(_ index: Int) -> ParticipantListItem? {
         if index < 0 || index >= self.players.count {
             return nil
         }
 
-        return self.players.objectAtIndex(index) as? ParticipantListItem
+        return self.players.object(at: index) as? ParticipantListItem
     }
 
-    func removeParticipantAtIndex(index: Int) -> Bool {
+    func removeParticipantAtIndex(_ index: Int) -> Bool {
         if index < 0 || index >= self.players.count {
             return false
         }
 
-        self.players.removeObjectAtIndex(index)
+        self.players.removeObject(at: index)
         return true
     }
 
@@ -100,28 +97,28 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         self.tableView.delegate = self
         self.tableView.dataSource = self
 
-        self.tableView.tableFooterView = UIView(frame: CGRectZero)
+        self.tableView.tableFooterView = UIView(frame: .zero)
         self.tableView.contentInset = UIEdgeInsets(top: 0, left: -10, bottom: 0, right: 0)
 
-        logoView = UIImageView(frame: CGRectMake(0, 0, 40, 40))
-        logoView.image = UIImage(named: "cardLogo")?.imageWithRenderingMode(.AlwaysTemplate)
+        logoView = UIImageView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
+        logoView.image = UIImage(named: "cardLogo")?.withRenderingMode(.alwaysTemplate)
         logoView.tintColor = toColor("#F9F9F9")
         self.navigationItem.titleView = logoView
 
         loadInitialData()
     }
 
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject!) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
 
         // Create a variable that you want to send
 
         if (segue.identifier == "presentWinner"){
-            configureWinnerDestination(segue.destinationViewController)
+            configureWinnerDestination(segue.destination)
         }
 
     }
 
-    func configureWinnerDestination(destination: AnyObject) -> Bool {
+    func configureWinnerDestination(_ destination: Any) -> Bool {
         if let winnerVC = destination as? WinnerViewController {
             if let winnerName = pickAWinner() {
                 winnerVC.winnerName = winnerName
@@ -137,44 +134,44 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     func loadInitialData(){
         let item1 = ParticipantListItem(name:"Hemal")
-        self.players.addObject(item1)
+        self.players.add(item1)
     }
 
-    func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
 
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return self.players.count
     }
 
 
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let CellIndentifier: NSString = "ListPrototypeCell"
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cellIdentifier = "ListPrototypeCell"
 
-        let cell = tableView.dequeueReusableCellWithIdentifier(CellIndentifier as String) ?? UITableViewCell(style: .Default, reuseIdentifier: CellIndentifier as String)
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) ?? UITableViewCell(style: .default, reuseIdentifier: cellIdentifier)
 
         if let participantItem = self.participantItemAtIndex(indexPath.row) {
-            cell.textLabel?.text = participantItem.itemName as String
-            cell.textLabel?.textColor = UIColor.blackColor()
+            cell.textLabel?.text = participantItem.itemName
+            cell.textLabel?.textColor = .black
 
             if participantItem.completed{
-                cell.accessoryType = .Checkmark
+                cell.accessoryType = .checkmark
             }
             else{
-                cell.accessoryType = .None
+                cell.accessoryType = .none
             }
         }
         else{
             cell.textLabel?.text = ""
-            cell.accessoryType = .None
+            cell.accessoryType = .none
         }
 
         return cell
     }
 
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        tableView.deselectRowAtIndexPath(indexPath, animated: false)
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: false)
         if self.removeParticipantAtIndex(indexPath.row) {
             tableView.reloadData()
         }

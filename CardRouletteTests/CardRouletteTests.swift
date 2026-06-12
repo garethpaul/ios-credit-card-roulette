@@ -48,8 +48,8 @@ class CardRouletteTests: XCTestCase {
     func testParticipantItemsIgnoreInvalidPlayerEntries() {
         let controller = ViewController()
         let item = ParticipantListItem(name: "Hemal")
-        controller.players.addObject(NSString(string: "invalid"))
-        controller.players.addObject(item)
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(item)
         let participantItems = controller.participantItems()
 
         XCTAssertEqual(participantItems.count, 1, "Invalid player entries should not participate in winner selection")
@@ -58,7 +58,7 @@ class CardRouletteTests: XCTestCase {
 
     func testParticipantItemAtIndexRejectsInvalidEntries() {
         let controller = ViewController()
-        controller.players.addObject(NSString(string: "invalid"))
+        controller.players.add(NSString(string: "invalid"))
 
         XCTAssertNil(controller.participantItemAtIndex(-1), "Negative participant indexes should be ignored")
         XCTAssertNil(controller.participantItemAtIndex(0), "Non-participant entries should be ignored")
@@ -67,7 +67,7 @@ class CardRouletteTests: XCTestCase {
 
     func testRemoveParticipantAtIndexRemovesValidEntry() {
         let controller = ViewController()
-        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
 
         XCTAssertTrue(controller.removeParticipantAtIndex(0), "Valid participant indexes should be removable")
         XCTAssertEqual(controller.players.count, 0, "Removing a valid participant should update the player list")
@@ -75,7 +75,7 @@ class CardRouletteTests: XCTestCase {
 
     func testRemoveParticipantAtIndexRejectsInvalidIndexes() {
         let controller = ViewController()
-        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
 
         XCTAssertFalse(controller.removeParticipantAtIndex(-1), "Negative participant indexes should not be removed")
         XCTAssertFalse(controller.removeParticipantAtIndex(1), "Out-of-range participant indexes should not be removed")
@@ -99,8 +99,8 @@ class CardRouletteTests: XCTestCase {
     func testConfigureWinnerDestinationSetsTypedParticipantWinner() {
         let controller = ViewController()
         let winner = WinnerViewController()
-        controller.players.addObject(NSString(string: "invalid"))
-        controller.players.addObject(ParticipantListItem(name: "Hemal"))
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
 
         XCTAssertTrue(controller.configureWinnerDestination(winner), "Winner destinations should accept valid winner controllers")
         XCTAssertEqual(winner.winnerName!, "Hemal", "Winner destinations should receive a typed participant winner")

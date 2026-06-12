@@ -74,13 +74,19 @@ make build
 make check
 ```
 
-The `lint`, `test`, and `build` targets intentionally alias the static baseline
-on hosts without the legacy Xcode toolchain, so the standard local gate commands
+The `lint`, `test`, and `build` targets intentionally alias the canonical baseline
+on hosts without Xcode, so the standard local gate commands
 stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
-For full legacy verification on macOS, use Xcode's test action or `xcodebuild test` with the appropriate scheme and destination.
+The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
+available, the baseline also compiles the unsigned Swift 5 app and XCTest bundle
+for the iOS Simulator. It does not launch gameplay, persist participant data,
+perform payment processing, or use signing material.
+
+For runtime verification on macOS, launch the sample in a simulator and exercise
+participant entry, removal, and winner selection without entering payment data.
 
 GitHub Actions runs the same Python static `make check` baseline on Ubuntu for
 pushes and pull requests. Full simulator and device verification remains a
