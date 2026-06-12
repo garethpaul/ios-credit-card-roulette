@@ -1,5 +1,16 @@
 # Changes
 
+## 2026-06-12
+
+- Added a shared Xcode scheme and portable simulator discovery so hosted macOS
+  CI executes the existing twelve-case XCTest suite through `make test`.
+- Disabled persisted checkout credentials and retained unsigned execution
+  without participant upload, payment processing, deployment, or signing.
+- Fixed Swift comment stripping so quoted plain-HTTP URLs remain visible to the
+  local-only privacy baseline.
+- Expanded source guardrails to reject generic payment processors and common
+  payment SDK surfaces, not only a specific card-number identifier.
+
 ## 2026-06-10
 
 - Added a GitHub Actions workflow that runs the SDK-free `make check` baseline

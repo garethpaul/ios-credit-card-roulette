@@ -32,8 +32,8 @@ Priority:
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
 - Keep the app and test targets on Swift 5 with the iOS 12 deployment target
-- Keep pinned GitHub Actions macOS CI compiling the unsigned app and XCTest
-  bundle through the canonical `make check` gate
+- Keep pinned GitHub Actions macOS CI executing the shared-scheme XCTest suite
+  through the canonical `make test` gate
 
 Next priorities:
 
