@@ -1,6 +1,6 @@
 # Location-Independent Roulette Verification
 
-status: planned
+status: completed
 
 ## Context
 
@@ -22,11 +22,22 @@ Absolute Makefile invocations resolve both the checker and conditional XCTest ru
 
 ## Work Completed
 
-Pending implementation.
+- Derived the checkout root from the loaded Makefile, invoked the checker by
+  absolute path, and entered the checkout before running XCTest.
+- Added exact Makefile, completed-plan evidence, and synchronized guidance.
+- Preserved participant, winner-flow, Swift, test, project, and workflow behavior.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- Root and external-directory Make gates passed for all four aliases.
+- The root-derivation mutation failed.
+- The checker-invocation mutation failed.
+- The XCTest-runner mutation failed.
+- The plan-status mutation failed.
+- The plan-evidence mutation failed.
+- The documentation mutation failed.
+- Checker compilation, shell syntax, project metadata parsing, diff hygiene,
+  intended-path review, secret scanning, and artifact inspection passed.
 
 ## Risk And Rollback
 
