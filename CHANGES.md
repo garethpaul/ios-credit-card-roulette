@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Added a shared typed winner trigger so invalid-only player arrays cannot
+  present the winner screen from either the button or shake path.
+
 ## 2026-06-12
 
 - Rejected non-participant objects from participant row removal while preserving
