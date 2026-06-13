@@ -1,6 +1,6 @@
 # Visible Participant Rows
 
-status: planned
+status: completed
 
 ## Context
 
@@ -44,8 +44,25 @@ through the participant-only raw-index guard.
 
 ## Work Completed
 
-Pending implementation.
+- Added a typed visible-row to raw-array index mapper with negative and
+  out-of-range rejection.
+- Routed table row count, cell lookup, and selection removal through the typed
+  mapping while preserving the established raw-index helpers.
+- Added XCTest coverage for invalid-entry filtering, typed removal mapping,
+  invalid visible indexes, and preservation of unrelated malformed entries.
+- Extended the static checker and repository guidance with the visible-row
+  contract and completed evidence requirements.
 
 ## Verification Completed
 
-Pending implementation and verification.
+- All four Make gates (`make lint`, `make test`, `make build`, and
+  `make check`) passed against the completed implementation.
+- `python3 -m py_compile scripts/check-baseline.py`, `sh -n
+  scripts/run-tests.sh`, workflow YAML parsing, and `git diff --check` passed.
+- A prepared baseline passed and seven hostile mutations were rejected: raw
+  table count, untyped mapping, direct raw cell lookup, direct raw selection
+  removal, missing invalid-entry preservation, reopened plan status, and
+  removed verification evidence.
+- `xcodebuild was unavailable` on this Linux host, so the eighteen-test
+  simulator suite was not executed locally. Hosted macOS remains responsible
+  for executable XCTest evidence.
