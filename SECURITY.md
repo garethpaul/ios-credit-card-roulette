@@ -30,6 +30,8 @@ Helpful reports include:
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - This sample must not collect, store, or process credit card numbers. Treat any real payment processing, persistence, analytics, or participant-data sharing as security-sensitive scope expansion.
 - `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, participant-name normalization, participant unwind handling, typed participant filtering, participant removal index checks, winner destination handling, navigation logo title view ownership, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
+- A typed winner trigger should prevent invalid legacy array entries from
+  navigating to winner presentation.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions
   without persisted checkout credentials and executes the unit-test suite in an
   unsigned simulator build without participant persistence or upload, payment

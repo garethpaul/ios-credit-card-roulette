@@ -1,6 +1,6 @@
 # Typed Winner Trigger Eligibility
 
-status: planned
+status: completed
 
 ## Context
 
@@ -69,3 +69,18 @@ array contents while preserving the existing fallback as defense in depth.
 - Hostile mutations restoring raw count in either trigger, weakening typed
   eligibility, removing empty/invalid/mixed tests, plan status, or verification
   evidence must be rejected.
+
+## Verification Completed
+
+- All four Make gates (`make lint`, `make test`, `make build`, and
+  `make check`) passed against the completed implementation and plan.
+- `python3 -m py_compile scripts/check-baseline.py`, `sh -n
+  scripts/run-tests.sh`, available plist/XML/workflow parsers, and
+  `git diff --check` passed.
+- A prepared baseline passed and eight hostile mutations were rejected. They
+  restored raw count in either trigger, weakened the shared helper, removed the
+  empty, invalid-only, or valid-participant assertions, reopened the plan, or
+  removed required verification evidence.
+- `xcodebuild` was unavailable on this Linux host, so the fifteen-test simulator
+  suite was not executed locally. Hosted macOS remains responsible for
+  executable XCTest evidence; physical shake behavior remains manual coverage.
