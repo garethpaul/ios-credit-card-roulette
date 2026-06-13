@@ -25,6 +25,7 @@ SWIFT_5_BUILD_PLAN = ROOT / "docs/plans/2026-06-10-swift-5-app-build.md"
 HOSTED_XCTEST_PLAN = ROOT / "docs/plans/2026-06-12-hosted-xctest.md"
 PARTICIPANT_REMOVAL_TYPE_PLAN = ROOT / "docs/plans/2026-06-12-participant-removal-type-guard.md"
 TYPED_WINNER_TRIGGER_PLAN = ROOT / "docs/plans/2026-06-13-typed-winner-trigger.md"
+VISIBLE_PARTICIPANT_ROWS_PLAN = ROOT / "docs/plans/2026-06-13-visible-participant-rows.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -105,6 +106,27 @@ def strip_swift_line_comments(text):
     return "\n".join(stripped_lines)
 
 
+def swift_function_body(text, signature):
+    start = text.find(signature)
+    if start == -1:
+        return ""
+
+    body_start = text.find("{", start)
+    if body_start == -1:
+        return ""
+
+    depth = 0
+    for index in range(body_start, len(text)):
+        character = text[index]
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return text[body_start + 1:index]
+    return ""
+
+
 def parse_xml(relative_path, failures):
     try:
         ET.parse(str(ROOT / relative_path))
@@ -166,6 +188,7 @@ def main():
         "docs/plans/2026-06-12-hosted-xctest.md",
         "docs/plans/2026-06-12-participant-removal-type-guard.md",
         "docs/plans/2026-06-13-typed-winner-trigger.md",
+        "docs/plans/2026-06-13-visible-participant-rows.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -220,6 +243,7 @@ def main():
     hosted_xctest_plan = HOSTED_XCTEST_PLAN.read_text(encoding="utf-8") if HOSTED_XCTEST_PLAN.exists() else ""
     participant_removal_type_plan = PARTICIPANT_REMOVAL_TYPE_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_TYPE_PLAN.exists() else ""
     typed_winner_trigger_plan = TYPED_WINNER_TRIGGER_PLAN.read_text(encoding="utf-8") if TYPED_WINNER_TRIGGER_PLAN.exists() else ""
+    visible_participant_rows_plan = VISIBLE_PARTICIPANT_ROWS_PLAN.read_text(encoding="utf-8") if VISIBLE_PARTICIPANT_ROWS_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -316,9 +340,32 @@ def main():
             failures)
     require("func removeParticipantAtIndex(_ index: Int) -> Bool" in view_controller and
             "object(at: index) is ParticipantListItem" in view_controller and
-            "self.players.removeObject(at: index)" in view_controller and
-            "if self.removeParticipantAtIndex(indexPath.row)" in view_controller,
-            "Participant row deletion must use a guarded removal helper",
+            "self.players.removeObject(at: index)" in view_controller,
+            "Raw participant deletion must preserve its typed index guard",
+            failures)
+    visible_index_body = swift_function_body(view_controller, "func playerIndexForParticipantRow")
+    visible_item_body = swift_function_body(view_controller, "func participantItemForVisibleRow")
+    visible_removal_body = swift_function_body(view_controller, "func removeParticipantForVisibleRow")
+    row_count_body = swift_function_body(view_controller, "numberOfRowsInSection")
+    row_selection_body = swift_function_body(view_controller, "didSelectRowAt")
+    require("participantRow < 0" in visible_index_body and
+            "object(at: playerIndex) is ParticipantListItem" in visible_index_body and
+            "visibleRow == participantRow" in visible_index_body and
+            "visibleRow += 1" in visible_index_body,
+            "Visible participant rows must map through typed entries",
+            failures)
+    require("playerIndexForParticipantRow(participantRow)" in visible_item_body and
+            "participantItemAtIndex(playerIndex)" in visible_item_body and
+            "playerIndexForParticipantRow(participantRow)" in visible_removal_body and
+            "removeParticipantAtIndex(playerIndex)" in visible_removal_body,
+            "Visible participant reads and removals must share the typed row mapping",
+            failures)
+    require("return self.participantItems().count" in row_count_body and
+            "self.players.count" not in row_count_body and
+            "participantItemForVisibleRow(indexPath.row)" in view_controller and
+            "removeParticipantForVisibleRow(indexPath.row)" in row_selection_body and
+            "removeParticipantAtIndex(indexPath.row)" not in row_selection_body,
+            "Table rendering and selection must use visible typed participant rows",
             failures)
     require("let scanner = Scanner(string: cString)" in hex_source and "scanner.isAtEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
@@ -341,6 +388,10 @@ def main():
             "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidEntryType" in tests and
+            "testVisibleParticipantRowsIgnoreInvalidEntries" in tests and
+            "testVisibleParticipantRemovalMapsToTypedEntry" in tests and
+            "testVisibleParticipantRowsRejectInvalidIndexes" in tests and
+            "Unrelated invalid entries should remain untouched" in tests and
             "testConfigureWinnerDestinationRejectsUnexpectedDestination" in tests and
             "testConfigureWinnerDestinationSetsFallbackWithoutParticipants" in tests and
             "testConfigureWinnerDestinationSetsTypedParticipantWinner" in tests and
@@ -402,6 +453,9 @@ def main():
     require("typed winner trigger" in readme.lower(),
             "README must document typed winner trigger eligibility",
             failures)
+    require("visible participant row" in readme.lower(),
+            "README must document typed visible-row filtering",
+            failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
@@ -414,6 +468,9 @@ def main():
     require("typed winner trigger" in vision.lower(),
             "VISION must preserve typed winner trigger eligibility",
             failures)
+    require("visible participant row" in vision.lower(),
+            "VISION must preserve typed visible-row filtering",
+            failures)
     require("credit card" in security.lower() and "make check" in security and "GitHub Actions" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
             "typed participant" in security.lower() and "participant removal" in security.lower() and
@@ -422,6 +479,9 @@ def main():
             failures)
     require("typed winner trigger" in security.lower(),
             "SECURITY must document typed winner trigger hardening",
+            failures)
+    require("visible participant row" in security.lower(),
+            "SECURITY must document typed visible-row filtering",
             failures)
     require("GitHub Actions" in changes and "empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and "title view" in changes.lower() and
@@ -434,6 +494,9 @@ def main():
             failures)
     require("typed winner trigger" in changes.lower(),
             "CHANGES must record typed winner trigger eligibility",
+            failures)
+    require("visible participant row" in changes.lower(),
+            "CHANGES must record typed visible-row filtering",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
@@ -474,6 +537,25 @@ def main():
             "All four Make gates" in typed_winner_trigger_plan and
             "hostile mutations" in typed_winner_trigger_plan.lower(),
             "typed winner trigger plan must record completed status and actual verification",
+            failures)
+    visible_rows_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", visible_participant_rows_plan
+    )
+    visible_rows_work = markdown_section(
+        visible_participant_rows_plan, "Work Completed"
+    )
+    visible_rows_verification = markdown_section(
+        visible_participant_rows_plan, "Verification Completed"
+    )
+    require(visible_rows_status == ["completed"] and visible_rows_work,
+            "visible participant rows plan must record one completed status and completed work",
+            failures)
+    require(visible_rows_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", visible_rows_verification) and
+            "All four Make gates" in visible_rows_verification and
+            "seven hostile mutations" in visible_rows_verification.lower() and
+            "xcodebuild was unavailable" in visible_rows_verification,
+            "visible participant rows plan must record completed local verification",
             failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan
