@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made every Make verification target derive the checkout root so static and
+  XCTest gates work from external directories.
 - Added a shared typed winner trigger so invalid-only player arrays cannot
   present the winner screen from either the button or shake path.
 - Filtered each visible participant row through typed entries so malformed
