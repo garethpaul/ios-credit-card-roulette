@@ -48,9 +48,13 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        if event?.subtype == .motionShake && self.canPickWinner() {
+        if self.shouldPresentWinner(for: motion) {
             self.performSegue(withIdentifier: "presentWinner", sender: self)
         }
+    }
+
+    func shouldPresentWinner(for motion: UIEvent.EventSubtype) -> Bool {
+        return motion == .motionShake && self.canPickWinner()
     }
 
     func canPickWinner() -> Bool {

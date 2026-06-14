@@ -1,6 +1,6 @@
 # Authoritative Shake Motion Routing
 
-status: planned
+status: completed
 
 ## Context
 
@@ -46,8 +46,25 @@ payment behavior remain unchanged.
 
 ## Work Completed
 
-Pending implementation.
+- Added a typed `shouldPresentWinner(for:)` predicate that accepts only
+  `.motionShake` and retains the existing typed-participant eligibility check.
+- Routed `motionEnded` through the callback's authoritative `motion` argument
+  instead of optional event metadata.
+- Added deterministic XCTest coverage, mutation-sensitive static contracts,
+  and synchronized maintenance and privacy guidance.
 
 ## Verification Completed
 
-Pending implementation and exact evidence.
+- All four Make gates passed in an isolated completed-plan preflight copy and
+  again in the implementation worktree.
+- The absolute Makefile check passed from an external directory.
+- `python3 -m py_compile scripts/check-baseline.py` passed; its exact generated
+  bytecode path was removed before the final artifact audit.
+- `sh -n scripts/run-tests.sh` passed.
+- Five isolated hostile mutations were rejected: restoring event-subtype
+  routing, removing motion identity, removing participant gating, removing
+  XCTest discovery, or deleting required plan evidence each failed the gate.
+- `git diff --check` passed, along with exact intended-path, generated-artifact,
+  changed-line credential, privacy/payment, dependency, project, workflow,
+  shared-scheme, and runner-preservation audits.
+- Local `xcodebuild was unavailable`; no local XCTest execution is claimed.
