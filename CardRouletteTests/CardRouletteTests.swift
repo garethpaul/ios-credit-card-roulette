@@ -10,6 +10,21 @@ import UIKit
 import XCTest
 @testable import CardRoulette
 
+class RecordingResponderViewController: ViewController {
+    var becomeFirstResponderCount = 0
+    var resignFirstResponderCount = 0
+
+    override func becomeFirstResponder() -> Bool {
+        becomeFirstResponderCount += 1
+        return true
+    }
+
+    override func resignFirstResponder() -> Bool {
+        resignFirstResponderCount += 1
+        return true
+    }
+}
+
 class CardRouletteTests: XCTestCase {
 
     func testParticipantNameNormalizationTrimsWhitespace() {
@@ -90,6 +105,20 @@ class CardRouletteTests: XCTestCase {
         controller.players.add(ParticipantListItem(name: "Hemal"))
 
         XCTAssertFalse(controller.shouldPresentWinner(for: .remoteControlPlay))
+    }
+
+    func testRouletteControllerOwnsFirstResponderWhileVisible() {
+        let controller = RecordingResponderViewController()
+
+        XCTAssertTrue(controller.canBecomeFirstResponder)
+
+        controller.viewDidAppear(false)
+        XCTAssertEqual(controller.becomeFirstResponderCount, 1)
+        XCTAssertEqual(controller.resignFirstResponderCount, 0)
+
+        controller.viewWillDisappear(false)
+        XCTAssertEqual(controller.becomeFirstResponderCount, 1)
+        XCTAssertEqual(controller.resignFirstResponderCount, 1)
     }
 
     func testParticipantItemAtIndexRejectsInvalidEntries() {

@@ -41,6 +41,20 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var players: NSMutableArray = []
     var logoView: UIImageView!
 
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        becomeFirstResponder()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        resignFirstResponder()
+        super.viewWillDisappear(animated)
+    }
+
     @IBAction func clickBtn(_ sender: Any) {
         if self.canPickWinner() {
             self.performSegue(withIdentifier: "presentWinner", sender: self)

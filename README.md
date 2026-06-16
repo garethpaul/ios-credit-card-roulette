@@ -62,6 +62,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
   entries cannot present the winner screen without an eligible participant.
 - Shake handling uses UIKit's authoritative motion argument while retaining the
   typed participant gate, so a nil event cannot suppress a valid shake.
+- Visible first-responder ownership acquires shake delivery when the roulette
+  screen appears and relinquishes it as the screen disappears.
 - Winner destination controllers are checked before winner data is assigned.
 - Participant removal checks row indexes before mutating the legacy player list.
 - Table rows use a fallback cell if the storyboard reuse identifier is unavailable.

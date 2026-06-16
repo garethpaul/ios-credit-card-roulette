@@ -28,6 +28,7 @@ TYPED_WINNER_TRIGGER_PLAN = ROOT / "docs/plans/2026-06-13-typed-winner-trigger.m
 VISIBLE_PARTICIPANT_ROWS_PLAN = ROOT / "docs/plans/2026-06-13-visible-participant-rows.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 SHAKE_MOTION_PLAN = ROOT / "docs/plans/2026-06-14-shake-motion-routing.md"
+SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-16-shake-first-responder-lifecycle.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -195,6 +196,7 @@ def main():
         "docs/plans/2026-06-13-visible-participant-rows.md",
         "docs/plans/2026-06-13-location-independent-make.md",
         "docs/plans/2026-06-14-shake-motion-routing.md",
+        "docs/plans/2026-06-16-shake-first-responder-lifecycle.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -252,6 +254,7 @@ def main():
     visible_participant_rows_plan = VISIBLE_PARTICIPANT_ROWS_PLAN.read_text(encoding="utf-8") if VISIBLE_PARTICIPANT_ROWS_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     shake_motion_plan = SHAKE_MOTION_PLAN.read_text(encoding="utf-8") if SHAKE_MOTION_PLAN.exists() else ""
+    shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -299,6 +302,9 @@ def main():
             failures)
     motion_ended_body = swift_function_body(view_controller, "override func motionEnded")
     shake_predicate_body = swift_function_body(view_controller, "func shouldPresentWinner")
+    responder_opt_in_body = swift_function_body(view_controller, "override var canBecomeFirstResponder")
+    view_did_appear_body = swift_function_body(view_controller, "override func viewDidAppear")
+    view_will_disappear_body = swift_function_body(view_controller, "override func viewWillDisappear")
     require("func canPickWinner() -> Bool" in view_controller and
             "return !self.participantItems().isEmpty" in view_controller and
             "if self.canPickWinner()" in view_controller and
@@ -307,6 +313,20 @@ def main():
             "motion == .motionShake && self.canPickWinner()" in shake_predicate_body and
             "self.players.count > 0" not in view_controller,
             "button and authoritative shake-motion winner actions must require a typed participant",
+            failures)
+    require("return true" in responder_opt_in_body and
+            "super.viewDidAppear(animated)" in view_did_appear_body and
+            "becomeFirstResponder()" in view_did_appear_body and
+            view_did_appear_body.find("super.viewDidAppear(animated)") < view_did_appear_body.find("becomeFirstResponder()") and
+            "resignFirstResponder()" in view_will_disappear_body and
+            "super.viewWillDisappear(animated)" in view_will_disappear_body and
+            view_will_disappear_body.find("resignFirstResponder()") < view_will_disappear_body.find("super.viewWillDisappear(animated)") and
+            "testRouletteControllerOwnsFirstResponderWhileVisible" in tests and
+            "RecordingResponderViewController" in tests and
+            "XCTAssertTrue(controller.canBecomeFirstResponder)" in tests and
+            "XCTAssertEqual(controller.becomeFirstResponderCount, 1)" in tests and
+            "XCTAssertEqual(controller.resignFirstResponderCount, 1)" in tests,
+            "visible roulette lifecycle must own first-responder status for shake delivery",
             failures)
     require("func participantItemFromSegueSource(_ source: Any?) -> ParticipantListItem?" in view_controller and
             "source as? AddParticipantViewController" in view_controller and
@@ -612,6 +632,32 @@ def main():
                 "typed participant" in document
                 for document in normalized_guidance),
             "project guidance must document authoritative shake routing",
+            failures)
+    shake_responder_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", shake_responder_plan
+    )
+    shake_responder_verification = markdown_section(
+        shake_responder_plan, "Verification Completed"
+    )
+    shake_responder_required = (
+        "All four Make gates",
+        "absolute Makefile",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n scripts/run-tests.sh",
+        "Six isolated hostile mutations",
+        "git diff --check",
+        "xcodebuild was unavailable",
+    )
+    require(shake_responder_statuses == ["completed"]
+            and all(item in shake_responder_verification
+                    for item in shake_responder_required)
+            and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b",
+                              shake_responder_verification),
+            "shake first-responder plan must record completed verification",
+            failures)
+    require(all("visible first-responder ownership" in document
+                for document in normalized_guidance),
+            "project guidance must document visible first-responder ownership",
             failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan

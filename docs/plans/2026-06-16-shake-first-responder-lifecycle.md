@@ -1,6 +1,6 @@
 # Shake First-Responder Lifecycle
 
-status: in_progress
+status: completed
 
 ## Context
 
@@ -90,4 +90,15 @@ while retaining the sample's local-only participant and no-payment scope.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- All four Make gates passed the isolated completed-plan preflight and the live
+  implementation worktree.
+- The absolute Makefile check passed from an external directory.
+- `python3 -m py_compile scripts/check-baseline.py` and
+  `sh -n scripts/run-tests.sh` passed.
+- Six isolated hostile mutations were rejected for responder opt-in,
+  appearance acquisition, disappearance resignation, lifecycle test
+  discovery, guidance, and plan status.
+- `git diff --check` passed together with intended-path, generated-artifact,
+  project/workflow/dependency, and changed-line credential audits.
+- Local `xcodebuild was unavailable`; the existing hosted macOS workflow is the
+  authoritative XCTest and project-build environment.
