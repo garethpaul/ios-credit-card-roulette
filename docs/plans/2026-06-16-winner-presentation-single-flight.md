@@ -1,6 +1,6 @@
 # Winner Presentation Single Flight
 
-status: planned
+status: completed
 
 ## Context
 
@@ -85,3 +85,29 @@ data, random sample winner selection, and the no-payment-processing boundary.
   discovery, guidance, and completed plan evidence.
 - Audit the exact diff, generated artifacts, changed lines for credentials, and
   project/workflow/dependency preservation before commit.
+
+## Work Completed
+
+- Added a transition-in-progress guard and shared
+  `presentWinnerIfPossible()` boundary for button and shake inputs.
+- Reserved the transition before requesting the winner segue and reset the
+  guard only when the roulette controller becomes visible again.
+- Added XCTest coverage for duplicate suppression and later-round reset, plus
+  portable source, test, plan, and guidance contracts.
+- Updated maintained project guidance without changing participant storage,
+  winner selection, dependencies, project metadata, or workflow behavior.
+
+## Verification Completed
+
+- All four Make gates passed after the completed implementation, and the
+  isolated preflight failed only while this plan still had planned status.
+- The absolute Makefile check passed from an external directory.
+- `python3 -m py_compile scripts/check-baseline.py` and
+  `sh -n scripts/run-tests.sh` passed.
+- Seven isolated hostile mutations were rejected for shared button routing,
+  shared shake routing, duplicate suppression, reservation ordering,
+  appearance reset, test discovery, and maintained guidance.
+- `git diff --check` passed together with intended-path, generated-artifact,
+  project/workflow/dependency, and changed-line credential audits.
+- Local `xcodebuild was unavailable`; the existing hosted macOS workflow is the
+  authoritative XCTest and project-build environment.

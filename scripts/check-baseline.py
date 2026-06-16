@@ -29,6 +29,7 @@ VISIBLE_PARTICIPANT_ROWS_PLAN = ROOT / "docs/plans/2026-06-13-visible-participan
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 SHAKE_MOTION_PLAN = ROOT / "docs/plans/2026-06-14-shake-motion-routing.md"
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-16-shake-first-responder-lifecycle.md"
+WINNER_SINGLE_FLIGHT_PLAN = ROOT / "docs/plans/2026-06-16-winner-presentation-single-flight.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -255,6 +256,7 @@ def main():
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     shake_motion_plan = SHAKE_MOTION_PLAN.read_text(encoding="utf-8") if SHAKE_MOTION_PLAN.exists() else ""
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
+    winner_single_flight_plan = WINNER_SINGLE_FLIGHT_PLAN.read_text(encoding="utf-8") if WINNER_SINGLE_FLIGHT_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -305,14 +307,28 @@ def main():
     responder_opt_in_body = swift_function_body(view_controller, "override var canBecomeFirstResponder")
     view_did_appear_body = swift_function_body(view_controller, "override func viewDidAppear")
     view_will_disappear_body = swift_function_body(view_controller, "override func viewWillDisappear")
+    click_button_body = swift_function_body(view_controller, "@IBAction func clickBtn")
+    present_winner_body = swift_function_body(view_controller, "func presentWinnerIfPossible")
     require("func canPickWinner() -> Bool" in view_controller and
             "return !self.participantItems().isEmpty" in view_controller and
-            "if self.canPickWinner()" in view_controller and
+            "self.presentWinnerIfPossible()" in click_button_body and
             "self.shouldPresentWinner(for: motion)" in motion_ended_body and
+            "self.presentWinnerIfPossible()" in motion_ended_body and
             "event?.subtype" not in motion_ended_body and
             "motion == .motionShake && self.canPickWinner()" in shake_predicate_body and
             "self.players.count > 0" not in view_controller,
             "button and authoritative shake-motion winner actions must require a typed participant",
+            failures)
+    require("!winnerPresentationInProgress && self.canPickWinner()" in present_winner_body and
+            "winnerPresentationInProgress = true" in present_winner_body and
+            'self.performSegue(withIdentifier: "presentWinner", sender: self)' in present_winner_body and
+            present_winner_body.find("winnerPresentationInProgress = true") < present_winner_body.find("self.performSegue") and
+            "winnerPresentationInProgress = false" in view_did_appear_body and
+            "testWinnerPresentationIsSingleFlightAcrossButtonAndShake" in tests and
+            "RecordingWinnerPresentationViewController" in tests and
+            "XCTAssertEqual(controller.performedWinnerSegueCount, 1" in tests and
+            "XCTAssertEqual(controller.performedWinnerSegueCount, 2" in tests,
+            "winner navigation must reserve one transition across button and shake inputs",
             failures)
     require("return true" in responder_opt_in_body and
             "super.viewDidAppear(animated)" in view_did_appear_body and
@@ -658,6 +674,32 @@ def main():
     require(all("visible first-responder ownership" in document
                 for document in normalized_guidance),
             "project guidance must document visible first-responder ownership",
+            failures)
+    winner_single_flight_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", winner_single_flight_plan
+    )
+    winner_single_flight_verification = markdown_section(
+        winner_single_flight_plan, "Verification Completed"
+    )
+    winner_single_flight_required = (
+        "All four Make gates",
+        "absolute Makefile",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n scripts/run-tests.sh",
+        "Seven isolated hostile mutations",
+        "git diff --check",
+        "xcodebuild was unavailable",
+    )
+    require(winner_single_flight_statuses == ["completed"]
+            and all(item in winner_single_flight_verification
+                    for item in winner_single_flight_required)
+            and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b",
+                              winner_single_flight_verification),
+            "winner single-flight plan must record completed verification",
+            failures)
+    require(all("single-flight winner presentation" in document
+                for document in normalized_guidance),
+            "project guidance must document single-flight winner presentation",
             failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan
