@@ -1,6 +1,6 @@
 # Winner Action Availability
 
-status: planned
+status: completed
 
 ## Context
 
@@ -80,8 +80,23 @@ local-only data and no-payment-processing boundaries.
 
 ## Work Completed
 
-Pending implementation.
+- Added derived winner-button availability and synchronized it after initial
+  loading, successful addition, and successful removal.
+- Added XCTest and portable contracts for empty, populated, added, and removed
+  participant states.
+- Updated maintained guidance without changing participant storage, winner
+  selection, navigation, dependencies, or project metadata.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- All four Make gates passed after the completed implementation.
+- The absolute Makefile check passed from an external directory.
+- `python3 -m py_compile scripts/check-baseline.py` and
+  `sh -n scripts/run-tests.sh` passed.
+- Eight isolated hostile mutations were rejected for the derived state, three
+  production mutation hooks, two XCTest contracts, maintained guidance, and
+  completed plan evidence.
+- `git diff --check` passed with intended-path, generated-artifact,
+  project/workflow/dependency, and changed-line credential audits.
+- Local `xcodebuild was unavailable`; hosted macOS remains authoritative for
+  XCTest and project builds.

@@ -52,6 +52,8 @@
   the roulette controller only while that screen is active.
 - Keep button and shake navigation behind single-flight winner presentation so
   one visible round cannot queue duplicate segues.
+- Keep winner action availability synchronized with typed participant mutations
+  so the primary button reflects whether selection can proceed.
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.

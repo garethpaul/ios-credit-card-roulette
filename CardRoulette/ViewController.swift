@@ -22,6 +22,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     @IBAction func unwindToList(_ segue: UIStoryboardSegue) {
         if let item = participantItemFromSegueSource(segue.source) {
             self.players.add(item)
+            self.updateWinnerActionAvailability()
             self.tableView.reloadData()
         }
 
@@ -84,6 +85,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     func canPickWinner() -> Bool {
         return !self.participantItems().isEmpty
+    }
+
+    func updateWinnerActionAvailability() {
+        self.pickWinner?.isEnabled = self.canPickWinner()
     }
 
     func pickAWinner() -> String? {
@@ -150,6 +155,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
 
         self.players.removeObject(at: index)
+        self.updateWinnerActionAvailability()
         return true
     }
 
@@ -206,6 +212,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func loadInitialData(){
         let item1 = ParticipantListItem(name:"Hemal")
         self.players.add(item1)
+        self.updateWinnerActionAvailability()
     }
 
     func numberOfSections(in tableView: UITableView) -> Int {

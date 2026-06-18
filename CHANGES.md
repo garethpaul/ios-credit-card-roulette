@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-18
+
+- Synchronized winner action availability with typed participant additions,
+  initial loading, and removals.
+
 ## 2026-06-16
 
 - Added single-flight winner presentation so concurrent button and shake inputs

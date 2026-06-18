@@ -30,6 +30,7 @@ LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independ
 SHAKE_MOTION_PLAN = ROOT / "docs/plans/2026-06-14-shake-motion-routing.md"
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-16-shake-first-responder-lifecycle.md"
 WINNER_SINGLE_FLIGHT_PLAN = ROOT / "docs/plans/2026-06-16-winner-presentation-single-flight.md"
+WINNER_ACTION_AVAILABILITY_PLAN = ROOT / "docs/plans/2026-06-18-winner-action-availability.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -257,6 +258,7 @@ def main():
     shake_motion_plan = SHAKE_MOTION_PLAN.read_text(encoding="utf-8") if SHAKE_MOTION_PLAN.exists() else ""
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     winner_single_flight_plan = WINNER_SINGLE_FLIGHT_PLAN.read_text(encoding="utf-8") if WINNER_SINGLE_FLIGHT_PLAN.exists() else ""
+    winner_action_availability_plan = WINNER_ACTION_AVAILABILITY_PLAN.read_text(encoding="utf-8") if WINNER_ACTION_AVAILABILITY_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -309,6 +311,10 @@ def main():
     view_will_disappear_body = swift_function_body(view_controller, "override func viewWillDisappear")
     click_button_body = swift_function_body(view_controller, "@IBAction func clickBtn")
     present_winner_body = swift_function_body(view_controller, "func presentWinnerIfPossible")
+    update_winner_action_body = swift_function_body(view_controller, "func updateWinnerActionAvailability")
+    unwind_to_list_body = swift_function_body(view_controller, "@IBAction func unwindToList")
+    remove_participant_body = swift_function_body(view_controller, "func removeParticipantAtIndex")
+    load_initial_data_body = swift_function_body(view_controller, "func loadInitialData")
     require("func canPickWinner() -> Bool" in view_controller and
             "return !self.participantItems().isEmpty" in view_controller and
             "self.presentWinnerIfPossible()" in click_button_body and
@@ -329,6 +335,18 @@ def main():
             "XCTAssertEqual(controller.performedWinnerSegueCount, 1" in tests and
             "XCTAssertEqual(controller.performedWinnerSegueCount, 2" in tests,
             "winner navigation must reserve one transition across button and shake inputs",
+            failures)
+    require("self.pickWinner?.isEnabled = self.canPickWinner()" in update_winner_action_body and
+            "self.players.add(item)" in unwind_to_list_body and
+            "self.updateWinnerActionAvailability()" in unwind_to_list_body and
+            unwind_to_list_body.find("self.players.add(item)") < unwind_to_list_body.find("self.updateWinnerActionAvailability()") and
+            "self.players.removeObject(at: index)" in remove_participant_body and
+            "self.updateWinnerActionAvailability()" in remove_participant_body and
+            remove_participant_body.find("self.players.removeObject(at: index)") < remove_participant_body.find("self.updateWinnerActionAvailability()") and
+            "self.players.add(item1)" in load_initial_data_body and
+            "self.updateWinnerActionAvailability()" in load_initial_data_body and
+            load_initial_data_body.find("self.players.add(item1)") < load_initial_data_body.find("self.updateWinnerActionAvailability()"),
+            "winner button availability must follow every production participant mutation",
             failures)
     require("return true" in responder_opt_in_body and
             "super.viewDidAppear(animated)" in view_did_appear_body and
@@ -430,6 +448,11 @@ def main():
             "testParticipantItemsIgnoreInvalidPlayerEntries" in tests and
             "testCanPickWinnerRejectsEmptyAndInvalidOnlyPlayers" in tests and
             "testCanPickWinnerAcceptsTypedParticipantAmongInvalidEntries" in tests and
+            "testWinnerButtonAvailabilityFollowsInitialLoadAndRemoval" in tests and
+            "testParticipantUnwindEnablesWinnerButton" in tests and
+            tests.count("controller.updateWinnerActionAvailability()") >= 2 and
+            tests.count("XCTAssertFalse(controller.pickWinner.isEnabled") == 2 and
+            tests.count("XCTAssertTrue(controller.pickWinner.isEnabled") == 2 and
             tests.count("XCTAssertFalse(controller.canPickWinner()") == 2 and
             "XCTAssertTrue(controller.canPickWinner()" in tests and
             "testShakeMotionRequiresTypedParticipant" in tests and
@@ -700,6 +723,32 @@ def main():
     require(all("single-flight winner presentation" in document
                 for document in normalized_guidance),
             "project guidance must document single-flight winner presentation",
+            failures)
+    winner_action_availability_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", winner_action_availability_plan
+    )
+    winner_action_availability_verification = markdown_section(
+        winner_action_availability_plan, "Verification Completed"
+    )
+    winner_action_availability_required = (
+        "All four Make gates",
+        "absolute Makefile",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n scripts/run-tests.sh",
+        "Eight isolated hostile mutations",
+        "git diff --check",
+        "xcodebuild was unavailable",
+    )
+    require(winner_action_availability_statuses == ["completed"]
+            and all(item in winner_action_availability_verification
+                    for item in winner_action_availability_required)
+            and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b",
+                              winner_action_availability_verification),
+            "winner action availability plan must record completed verification",
+            failures)
+    require(all("winner action availability" in document
+                for document in normalized_guidance),
+            "project guidance must document winner action availability",
             failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan

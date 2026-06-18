@@ -66,6 +66,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
   screen appears and relinquishes it as the screen disappears.
 - Button and shake inputs share single-flight winner presentation, preventing a
   second input from queuing another winner segue during the same transition.
+- Winner action availability follows typed participant additions and removals,
+  so the primary button is disabled when no winner can be selected.
 - Winner destination controllers are checked before winner data is assigned.
 - Participant removal checks row indexes before mutating the legacy player list.
 - Table rows use a fallback cell if the storyboard reuse identifier is unavailable.
@@ -91,7 +93,7 @@ stay available while preserving the single source of truth.
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
-the static baseline, then compiles the unsigned Swift 5 app and executes twenty
+the static baseline, then compiles the unsigned Swift 5 app and executes twenty-four
 participant normalization, array-safety, removal, unwind, and winner-destination
 tests on an available iPhone simulator. It does not persist or upload participant
 data, perform payment processing, deploy, or use signing material.

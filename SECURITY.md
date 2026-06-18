@@ -39,6 +39,8 @@ Helpful reports include:
   processing.
 - Single-flight winner presentation rejects duplicate button or shake
   navigation while a winner transition is already in progress.
+- Winner action availability is derived from typed participants after each
+  production mutation without persisting or exposing participant data.
 - Visible participant rows should map through typed entries before rendering or
   removal so malformed legacy values remain inert.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions
