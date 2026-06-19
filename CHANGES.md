@@ -4,6 +4,8 @@
 
 - Added a shared typed winner trigger so invalid-only player arrays cannot
   present the winner screen from either the button or shake path.
+- Filtered each visible participant row through typed entries so malformed
+  legacy values cannot create blank rows or redirect row removal.
 
 ## 2026-06-12
 

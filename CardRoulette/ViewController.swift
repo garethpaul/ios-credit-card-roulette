@@ -85,6 +85,33 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         return self.players.object(at: index) as? ParticipantListItem
     }
 
+    func playerIndexForParticipantRow(_ participantRow: Int) -> Int? {
+        if participantRow < 0 {
+            return nil
+        }
+
+        var visibleRow = 0
+        for playerIndex in 0..<self.players.count {
+            guard self.players.object(at: playerIndex) is ParticipantListItem else {
+                continue
+            }
+            if visibleRow == participantRow {
+                return playerIndex
+            }
+            visibleRow += 1
+        }
+
+        return nil
+    }
+
+    func participantItemForVisibleRow(_ participantRow: Int) -> ParticipantListItem? {
+        guard let playerIndex = playerIndexForParticipantRow(participantRow) else {
+            return nil
+        }
+
+        return participantItemAtIndex(playerIndex)
+    }
+
     func removeParticipantAtIndex(_ index: Int) -> Bool {
         if index < 0 || index >= self.players.count {
             return false
@@ -95,6 +122,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         self.players.removeObject(at: index)
         return true
+    }
+
+    func removeParticipantForVisibleRow(_ participantRow: Int) -> Bool {
+        guard let playerIndex = playerIndexForParticipantRow(participantRow) else {
+            return false
+        }
+
+        return removeParticipantAtIndex(playerIndex)
     }
 
     
@@ -149,7 +184,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.players.count
+        return self.participantItems().count
     }
 
 
@@ -158,7 +193,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) ?? UITableViewCell(style: .default, reuseIdentifier: cellIdentifier)
 
-        if let participantItem = self.participantItemAtIndex(indexPath.row) {
+        if let participantItem = self.participantItemForVisibleRow(indexPath.row) {
             cell.textLabel?.text = participantItem.itemName
             cell.textLabel?.textColor = .black
 
@@ -179,7 +214,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
-        if self.removeParticipantAtIndex(indexPath.row) {
+        if self.removeParticipantForVisibleRow(indexPath.row) {
             tableView.reloadData()
         }
         

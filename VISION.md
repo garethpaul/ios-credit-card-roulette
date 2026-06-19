@@ -22,6 +22,7 @@ Priority:
 - Keep participant-name normalization shared and covered by focused tests
 - Keep typed participant filtering in front of the legacy mutable player list
 - Keep button and shake navigation behind one typed winner trigger
+- Keep each visible participant row mapped to a typed legacy-array entry
 - Keep participant removal guarded by row index checks
 - Keep winner destination handling guarded before winner data is assigned
 - Keep participant table rows resilient with a fallback cell

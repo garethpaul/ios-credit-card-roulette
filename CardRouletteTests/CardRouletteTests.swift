@@ -107,6 +107,45 @@ class CardRouletteTests: XCTestCase {
         XCTAssertEqual(controller.players.count, 1, "Rejected entries should remain untouched")
     }
 
+    func testVisibleParticipantRowsIgnoreInvalidEntries() {
+        let controller = ViewController()
+        let first = ParticipantListItem(name: "Hemal")
+        let second = ParticipantListItem(name: "Gareth")
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(first)
+        controller.players.add(NSNumber(value: 7))
+        controller.players.add(second)
+
+        XCTAssertEqual(controller.tableView(UITableView(), numberOfRowsInSection: 0), 2)
+        XCTAssertTrue(controller.participantItemForVisibleRow(0) === first)
+        XCTAssertTrue(controller.participantItemForVisibleRow(1) === second)
+    }
+
+    func testVisibleParticipantRemovalMapsToTypedEntry() {
+        let controller = ViewController()
+        let remaining = ParticipantListItem(name: "Gareth")
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+        controller.players.add(remaining)
+
+        XCTAssertTrue(controller.removeParticipantForVisibleRow(0))
+        XCTAssertEqual(controller.players.count, 2)
+        XCTAssertTrue(controller.players.object(at: 0) is NSString, "Unrelated invalid entries should remain untouched")
+        XCTAssertTrue(controller.participantItemForVisibleRow(0) === remaining)
+    }
+
+    func testVisibleParticipantRowsRejectInvalidIndexes() {
+        let controller = ViewController()
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertNil(controller.participantItemForVisibleRow(-1))
+        XCTAssertNil(controller.participantItemForVisibleRow(1))
+        XCTAssertFalse(controller.removeParticipantForVisibleRow(-1))
+        XCTAssertFalse(controller.removeParticipantForVisibleRow(1))
+        XCTAssertEqual(controller.players.count, 2)
+    }
+
     func testConfigureWinnerDestinationRejectsUnexpectedDestination() {
         let controller = ViewController()
 
