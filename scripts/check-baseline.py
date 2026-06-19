@@ -24,6 +24,7 @@ HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation
 SWIFT_5_BUILD_PLAN = ROOT / "docs/plans/2026-06-10-swift-5-app-build.md"
 HOSTED_XCTEST_PLAN = ROOT / "docs/plans/2026-06-12-hosted-xctest.md"
 PARTICIPANT_REMOVAL_TYPE_PLAN = ROOT / "docs/plans/2026-06-12-participant-removal-type-guard.md"
+TYPED_WINNER_TRIGGER_PLAN = ROOT / "docs/plans/2026-06-13-typed-winner-trigger.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -164,6 +165,7 @@ def main():
         "docs/plans/2026-06-10-swift-5-app-build.md",
         "docs/plans/2026-06-12-hosted-xctest.md",
         "docs/plans/2026-06-12-participant-removal-type-guard.md",
+        "docs/plans/2026-06-13-typed-winner-trigger.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -217,6 +219,7 @@ def main():
     swift_5_build_plan = SWIFT_5_BUILD_PLAN.read_text(encoding="utf-8") if SWIFT_5_BUILD_PLAN.exists() else ""
     hosted_xctest_plan = HOSTED_XCTEST_PLAN.read_text(encoding="utf-8") if HOSTED_XCTEST_PLAN.exists() else ""
     participant_removal_type_plan = PARTICIPANT_REMOVAL_TYPE_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_TYPE_PLAN.exists() else ""
+    typed_winner_trigger_plan = TYPED_WINNER_TRIGGER_PLAN.read_text(encoding="utf-8") if TYPED_WINNER_TRIGGER_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -262,8 +265,12 @@ def main():
             "participantItems.isEmpty" in view_controller,
             "Winner selection must return nil when no typed participants are available",
             failures)
-    require("if self.players.count > 0" in view_controller and "event?.subtype == .motionShake && self.players.count > 0" in view_controller,
-            "winner actions must be blocked when there are no participants",
+    require("func canPickWinner() -> Bool" in view_controller and
+            "return !self.participantItems().isEmpty" in view_controller and
+            "if self.canPickWinner()" in view_controller and
+            "event?.subtype == .motionShake && self.canPickWinner()" in view_controller and
+            "self.players.count > 0" not in view_controller,
+            "button and shake winner actions must require a typed participant",
             failures)
     require("func participantItemFromSegueSource(_ source: Any?) -> ParticipantListItem?" in view_controller and
             "source as? AddParticipantViewController" in view_controller and
@@ -326,6 +333,10 @@ def main():
             "testParticipantItemFromWinnerSource" in tests and
             "testParticipantItemFromUnknownSourceReturnsNil" in tests and
             "testParticipantItemsIgnoreInvalidPlayerEntries" in tests and
+            "testCanPickWinnerRejectsEmptyAndInvalidOnlyPlayers" in tests and
+            "testCanPickWinnerAcceptsTypedParticipantAmongInvalidEntries" in tests and
+            tests.count("XCTAssertFalse(controller.canPickWinner()") == 2 and
+            "XCTAssertTrue(controller.canPickWinner()" in tests and
             "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
             "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
@@ -388,6 +399,9 @@ def main():
             "winner destination" in readme.lower() and "title view" in readme.lower(),
             "README must document static verification, project usage, winner guards, typed participant guards, cell fallback, and payment boundary",
             failures)
+    require("typed winner trigger" in readme.lower(),
+            "README must document typed winner trigger eligibility",
+            failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
@@ -397,11 +411,17 @@ def main():
             "winner destination" in vision.lower() and "title view" in vision.lower(),
             "VISION must describe the current static privacy baseline",
             failures)
+    require("typed winner trigger" in vision.lower(),
+            "VISION must preserve typed winner trigger eligibility",
+            failures)
     require("credit card" in security.lower() and "make check" in security and "GitHub Actions" in security and
             "normalization" in security.lower() and "unwind" in security.lower() and
             "typed participant" in security.lower() and "participant removal" in security.lower() and
             "winner destination" in security.lower() and "title view" in security.lower(),
             "SECURITY must document payment-data boundary and static baseline",
+            failures)
+    require("typed winner trigger" in security.lower(),
+            "SECURITY must document typed winner trigger hardening",
             failures)
     require("GitHub Actions" in changes and "empty participant" in changes.lower() and "blank" in changes.lower() and
             "winner" in changes.lower() and "fallback cell" in changes.lower() and "title view" in changes.lower() and
@@ -411,6 +431,9 @@ def main():
             failures)
     require("typed participant" in changes.lower(),
             "CHANGES must record typed participant array guard updates",
+            failures)
+    require("typed winner trigger" in changes.lower(),
+            "CHANGES must record typed winner trigger eligibility",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
@@ -446,6 +469,11 @@ def main():
     require("status: completed" in hosted_xctest_plan and "make test" in hosted_xctest_plan and
             "hosted macOS XCTest run" in hosted_xctest_plan,
             "hosted XCTest plan must record the completed executable test contract",
+            failures)
+    require("status: completed" in typed_winner_trigger_plan and
+            "All four Make gates" in typed_winner_trigger_plan and
+            "hostile mutations" in typed_winner_trigger_plan.lower(),
+            "typed winner trigger plan must record completed status and actual verification",
             failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan

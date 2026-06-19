@@ -56,6 +56,23 @@ class CardRouletteTests: XCTestCase {
         XCTAssertTrue(participantItems[0] === item, "Valid participant entries should remain available")
     }
 
+    func testCanPickWinnerRejectsEmptyAndInvalidOnlyPlayers() {
+        let controller = ViewController()
+
+        XCTAssertFalse(controller.canPickWinner(), "An empty player list should not present a winner")
+
+        controller.players.add(NSString(string: "invalid"))
+        XCTAssertFalse(controller.canPickWinner(), "Invalid array entries should not enable winner presentation")
+    }
+
+    func testCanPickWinnerAcceptsTypedParticipantAmongInvalidEntries() {
+        let controller = ViewController()
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertTrue(controller.canPickWinner(), "A typed participant should enable winner presentation")
+    }
+
     func testParticipantItemAtIndexRejectsInvalidEntries() {
         let controller = ViewController()
         controller.players.add(NSString(string: "invalid"))

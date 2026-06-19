@@ -42,15 +42,19 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var logoView: UIImageView!
 
     @IBAction func clickBtn(_ sender: Any) {
-        if self.players.count > 0 {
+        if self.canPickWinner() {
             self.performSegue(withIdentifier: "presentWinner", sender: self)
         }
     }
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        if event?.subtype == .motionShake && self.players.count > 0 {
+        if event?.subtype == .motionShake && self.canPickWinner() {
             self.performSegue(withIdentifier: "presentWinner", sender: self)
         }
+    }
+
+    func canPickWinner() -> Bool {
+        return !self.participantItems().isEmpty
     }
 
     func pickAWinner() -> String? {

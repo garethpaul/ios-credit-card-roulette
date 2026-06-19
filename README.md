@@ -56,6 +56,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Participant-name normalization is shared by both entry screens and covered by focused XCTest assertions.
 - Participant unwind sources are checked before reading participant items.
 - Winner selection filters the legacy player list down to typed participant entries before choosing a winner.
+- The button and shake paths share a typed winner trigger, so invalid legacy
+  entries cannot present the winner screen without an eligible participant.
 - Winner destination controllers are checked before winner data is assigned.
 - Participant removal checks row indexes before mutating the legacy player list.
 - Table rows use a fallback cell if the storyboard reuse identifier is unavailable.
@@ -81,7 +83,7 @@ stay available while preserving the single source of truth.
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
-the static baseline, then compiles the unsigned Swift 5 app and executes twelve
+the static baseline, then compiles the unsigned Swift 5 app and executes fifteen
 participant normalization, array-safety, removal, unwind, and winner-destination
 tests on an available iPhone simulator. It does not persist or upload participant
 data, perform payment processing, deploy, or use signing material.
@@ -105,6 +107,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include CardRoulette/Info.plist, CardRouletteTests/Info.plist.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include CardRoulette/AddParticipantViewController.swift, CardRoulette/Info.plist, CardRoulette/ViewController.swift, CardRoulette/WinnerViewController.swift, and 1 more.
 - Participant names and payment choices should remain local-only. Do not add storage, upload, analytics, or real payment processing without a separate privacy and security design.
+- Keep the typed winner trigger aligned with filtered participant selection.
 
 ## Maintenance Notes
 
@@ -121,6 +124,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   baseline.
 - See `docs/plans/2026-06-12-hosted-xctest.md` for the shared scheme,
   simulator discovery, and hosted XCTest gate.
+- See `docs/plans/2026-06-13-typed-winner-trigger.md` for button and shake
+  eligibility based on typed participants.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing
