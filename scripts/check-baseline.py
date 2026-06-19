@@ -302,7 +302,7 @@ def main():
     require("func pickAWinner() -> String?" in view_controller and
             "let participantItems = self.participantItems()" in view_controller and
             "participantItems.isEmpty" in view_controller,
-            "Winner selection must return nil when no typed participants are available",
+            "Winner selection must return nil when no typed, nonempty participants are available",
             failures)
     motion_ended_body = swift_function_body(view_controller, "override func motionEnded")
     shake_predicate_body = swift_function_body(view_controller, "func shouldPresentWinner")
@@ -323,7 +323,7 @@ def main():
             "event?.subtype" not in motion_ended_body and
             "motion == .motionShake && self.canPickWinner()" in shake_predicate_body and
             "self.players.count > 0" not in view_controller,
-            "button and authoritative shake-motion winner actions must require a typed participant",
+            "button and authoritative shake-motion winner actions must require a typed, nonempty participant",
             failures)
     require("!winnerPresentationInProgress && self.canPickWinner()" in present_winner_body and
             "winnerPresentationInProgress = true" in present_winner_body and
@@ -395,19 +395,26 @@ def main():
             failures)
     require("func participantItems() -> [ParticipantListItem]" in view_controller and
             "object(at: index) as? ParticipantListItem" in view_controller and
+            "func visibleName(for participantItem: ParticipantListItem) -> String?" in view_controller and
+            "ParticipantListItem.normalizedName(participantItem.itemName)" in view_controller and
+            "func isVisibleParticipantItem(_ participantItem: ParticipantListItem) -> Bool" in view_controller and
+            "self.isVisibleParticipantItem(participantItem)" in view_controller and
             "Int.random(in: participantItems.indices)" in view_controller and
+            "return self.visibleName(for: winner)" in view_controller and
             "arc4random_uniform" not in view_controller and
             "self.players.objectAtIndex(Int(randomIndex)) as!" not in view_controller,
-            "Winner selection must filter the legacy player array before bounded random participant selection",
+            "Winner selection must filter the legacy player array to typed, nonempty participants before bounded random participant selection",
             failures)
     require("func participantItemAtIndex(_ index: Int) -> ParticipantListItem?" in view_controller and
-            "return self.players.object(at: index) as? ParticipantListItem" in view_controller,
-            "Participant table rendering must use a guarded participant accessor",
+            "guard let participantItem = self.players.object(at: index) as? ParticipantListItem" in view_controller and
+            "self.isVisibleParticipantItem(participantItem)" in view_controller and
+            "return participantItem" in view_controller,
+            "Participant table rendering must use a guarded nonempty participant accessor",
             failures)
     require("func removeParticipantAtIndex(_ index: Int) -> Bool" in view_controller and
-            "object(at: index) is ParticipantListItem" in view_controller and
+            "self.participantItemAtIndex(index) != nil" in view_controller and
             "self.players.removeObject(at: index)" in view_controller,
-            "Raw participant deletion must preserve its typed index guard",
+            "Raw participant deletion must preserve its typed, nonempty index guard",
             failures)
     visible_index_body = swift_function_body(view_controller, "func playerIndexForParticipantRow")
     visible_item_body = swift_function_body(view_controller, "func participantItemForVisibleRow")
@@ -415,10 +422,10 @@ def main():
     row_count_body = swift_function_body(view_controller, "numberOfRowsInSection")
     row_selection_body = swift_function_body(view_controller, "didSelectRowAt")
     require("participantRow < 0" in visible_index_body and
-            "object(at: playerIndex) is ParticipantListItem" in visible_index_body and
+            "participantItemAtIndex(playerIndex) != nil" in visible_index_body and
             "visibleRow == participantRow" in visible_index_body and
             "visibleRow += 1" in visible_index_body,
-            "Visible participant rows must map through typed entries",
+            "Visible participant rows must map through typed, nonempty entries",
             failures)
     require("playerIndexForParticipantRow(participantRow)" in visible_item_body and
             "participantItemAtIndex(playerIndex)" in visible_item_body and
@@ -448,12 +455,14 @@ def main():
             "testParticipantItemsIgnoreInvalidPlayerEntries" in tests and
             "testCanPickWinnerRejectsEmptyAndInvalidOnlyPlayers" in tests and
             "testCanPickWinnerAcceptsTypedParticipantAmongInvalidEntries" in tests and
+            "testCanPickWinnerRejectsTypedParticipantsWithoutVisibleNames" in tests and
+            "testPickAWinnerRejectsTypedParticipantsWithoutVisibleNames" in tests and
             "testWinnerButtonAvailabilityFollowsInitialLoadAndRemoval" in tests and
             "testParticipantUnwindEnablesWinnerButton" in tests and
             tests.count("controller.updateWinnerActionAvailability()") >= 2 and
             tests.count("XCTAssertFalse(controller.pickWinner.isEnabled") == 2 and
             tests.count("XCTAssertTrue(controller.pickWinner.isEnabled") == 2 and
-            tests.count("XCTAssertFalse(controller.canPickWinner()") == 2 and
+            tests.count("XCTAssertFalse(controller.canPickWinner()") >= 3 and
             "XCTAssertTrue(controller.canPickWinner()" in tests and
             "testShakeMotionRequiresTypedParticipant" in tests and
             tests.count("controller.shouldPresentWinner(for: .motionShake)") == 3 and
@@ -464,6 +473,7 @@ def main():
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidEntryType" in tests and
             "testVisibleParticipantRowsIgnoreInvalidEntries" in tests and
+            "testVisibleParticipantRowsIgnoreTypedEntriesWithoutVisibleNames" in tests and
             "testVisibleParticipantRemovalMapsToTypedEntry" in tests and
             "testVisibleParticipantRowsRejectInvalidIndexes" in tests and
             "Unrelated invalid entries should remain untouched" in tests and
@@ -507,9 +517,11 @@ def main():
             failures)
     require("xcrun simctl list devices available" in test_runner and
             "IOS_DESTINATION" in test_runner and "IOS_SIMULATOR_NAME" in test_runner and
+            "DERIVED_DATA_PATH" in test_runner and
             '-scheme "$SCHEME"' in test_runner and '-destination "$DESTINATION"' in test_runner and
+            '-derivedDataPath "$DERIVED_DATA_PATH"' in test_runner and
             "CODE_SIGNING_ALLOWED=NO" in test_runner and "test" in test_runner,
-            "test runner must discover or accept a simulator and execute unsigned XCTest",
+            "test runner must discover or accept a simulator, keep DerivedData configurable, and execute unsigned XCTest",
             failures)
     require("iPhone 5" not in test_runner,
             "test runner must not use a retired fixed simulator",
@@ -671,6 +683,9 @@ def main():
                 "typed participant" in document
                 for document in normalized_guidance),
             "project guidance must document authoritative shake routing",
+            failures)
+    require(all("nonempty" in document for document in normalized_guidance),
+            "project guidance must document nonempty participant eligibility",
             failures)
     shake_responder_statuses = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", shake_responder_plan

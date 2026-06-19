@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-19
+
+- Tightened winner and visible-row eligibility to typed participants with
+  nonempty normalized names, so blank legacy entries cannot enable selection or
+  render as selectable rows.
+- Added a `DERIVED_DATA_PATH` override to the XCTest runner and defaulted
+  DerivedData to the system temp directory.
+
 ## 2026-06-18
 
 - Synchronized winner action availability with typed participant additions,

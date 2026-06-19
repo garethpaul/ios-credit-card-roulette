@@ -29,9 +29,9 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - This sample must not collect, store, or process credit card numbers. Treat any real payment processing, persistence, analytics, or participant-data sharing as security-sensitive scope expansion.
-- `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, participant-name normalization, participant unwind handling, typed participant filtering, participant removal index checks, winner destination handling, navigation logo title view ownership, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
-- A typed winner trigger should prevent invalid legacy array entries from
-  navigating to winner presentation.
+- `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, participant-name normalization, participant unwind handling, typed and nonempty participant filtering, participant removal index checks, winner destination handling, navigation logo title view ownership, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
+- A typed winner trigger with a nonempty-name guard should prevent invalid
+  legacy array entries from navigating to winner presentation.
 - Shake navigation should use UIKit's authoritative motion argument while
   retaining the typed participant gate.
 - Visible first-responder ownership is limited to the active roulette screen;
@@ -39,10 +39,12 @@ Helpful reports include:
   processing.
 - Single-flight winner presentation rejects duplicate button or shake
   navigation while a winner transition is already in progress.
-- Winner action availability is derived from typed participants after each
-  production mutation without persisting or exposing participant data.
-- Visible participant rows should map through typed entries before rendering or
-  removal so malformed legacy values remain inert.
+- Winner action availability is derived from typed participants with nonempty
+  normalized names after each production mutation without persisting or exposing
+  participant data.
+- Visible participant rows should map through typed entries with nonempty
+  normalized names before rendering or removal so malformed legacy values remain
+  inert.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions
   without persisted checkout credentials and executes the unit-test suite in an
   unsigned simulator build without participant persistence or upload, payment

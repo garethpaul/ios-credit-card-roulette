@@ -20,8 +20,10 @@ Priority:
 - Avoid storing real payment information
 - Keep participant input trimmed and winner display fallbacks explicit
 - Keep participant-name normalization shared and covered by focused tests
-- Keep typed participant filtering in front of the legacy mutable player list
-- Keep button and shake navigation behind one typed winner trigger
+- Keep typed and nonempty participant filtering in front of the legacy mutable
+  player list
+- Keep button and shake navigation behind one typed winner trigger with a
+  nonempty-name guard
 - Route shake navigation from UIKit's authoritative motion argument while
   retaining the typed participant gate
 - Keep visible first-responder ownership scoped to the active roulette screen
@@ -29,8 +31,9 @@ Priority:
 - Keep button and shake actions behind single-flight winner presentation so a
   visible round can request only one winner transition
 - Keep winner action availability synchronized with typed participant additions
-  and removals
-- Keep each visible participant row mapped to a typed legacy-array entry
+  and removals that leave at least one nonempty normalized name
+- Keep each visible participant row mapped to a typed legacy-array entry with a
+  nonempty normalized name
 - Keep participant removal guarded by row index checks
 - Keep winner destination handling guarded before winner data is assigned
 - Keep participant table rows resilient with a fallback cell
@@ -71,13 +74,13 @@ otherwise.
 Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 `scripts/check-baseline.py` without Xcode. It verifies empty-list winner
 selection, shared participant-name normalization, focused XCTest assertions,
-participant unwind source handling, typed participant filtering, participant
+participant unwind source handling, typed and nonempty participant filtering, participant
 removal index guards, winner destination handling, invalid hex fallback
 behavior, winner-screen input guards, fallback cell handling, navigation logo
 title view ownership, local-only
 participant data expectations, project metadata, and documentation guardrails.
-The typed winner trigger should use the same filtered participant boundary as
-winner selection before navigation.
+The typed winner trigger should use the same nonempty filtered participant
+boundary as winner selection before navigation.
 On macOS, the baseline should compile the unsigned app and XCTest bundle without
 launching gameplay, persisting participants, or introducing payment behavior.
 

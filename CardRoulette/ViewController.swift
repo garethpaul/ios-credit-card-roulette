@@ -96,14 +96,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if participantItems.isEmpty {
             return nil
         }
-        return participantItems[Int.random(in: participantItems.indices)].itemName
+        let winner = participantItems[Int.random(in: participantItems.indices)]
+        return self.visibleName(for: winner)
     }
 
     func participantItems() -> [ParticipantListItem] {
         var participantItems: [ParticipantListItem] = []
 
         for index in 0..<self.players.count {
-            if let participantItem = self.players.object(at: index) as? ParticipantListItem {
+            if let participantItem = self.players.object(at: index) as? ParticipantListItem,
+               self.isVisibleParticipantItem(participantItem) {
                 participantItems.append(participantItem)
             }
         }
@@ -111,12 +113,25 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         return participantItems
     }
 
+    func visibleName(for participantItem: ParticipantListItem) -> String? {
+        return ParticipantListItem.normalizedName(participantItem.itemName)
+    }
+
+    func isVisibleParticipantItem(_ participantItem: ParticipantListItem) -> Bool {
+        return self.visibleName(for: participantItem) != nil
+    }
+
     func participantItemAtIndex(_ index: Int) -> ParticipantListItem? {
         if index < 0 || index >= self.players.count {
             return nil
         }
 
-        return self.players.object(at: index) as? ParticipantListItem
+        guard let participantItem = self.players.object(at: index) as? ParticipantListItem,
+              self.isVisibleParticipantItem(participantItem) else {
+            return nil
+        }
+
+        return participantItem
     }
 
     func playerIndexForParticipantRow(_ participantRow: Int) -> Int? {
@@ -126,7 +141,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
         var visibleRow = 0
         for playerIndex in 0..<self.players.count {
-            guard self.players.object(at: playerIndex) is ParticipantListItem else {
+            guard self.participantItemAtIndex(playerIndex) != nil else {
                 continue
             }
             if visibleRow == participantRow {
@@ -150,7 +165,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         if index < 0 || index >= self.players.count {
             return false
         }
-        guard self.players.object(at: index) is ParticipantListItem else {
+        guard self.participantItemAtIndex(index) != nil else {
             return false
         }
 
@@ -190,7 +205,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         // Create a variable that you want to send
 
         if (segue.identifier == "presentWinner"){
-            configureWinnerDestination(segue.destination)
+            _ = configureWinnerDestination(segue.destination)
         }
 
     }
@@ -230,7 +245,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) ?? UITableViewCell(style: .default, reuseIdentifier: cellIdentifier)
 
         if let participantItem = self.participantItemForVisibleRow(indexPath.row) {
-            cell.textLabel?.text = participantItem.itemName
+            cell.textLabel?.text = self.visibleName(for: participantItem)
             cell.textLabel?.textColor = .black
 
             if participantItem.completed{
