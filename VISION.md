@@ -24,6 +24,8 @@ Priority:
 - Keep button and shake navigation behind one typed winner trigger
 - Route shake navigation from UIKit's authoritative motion argument while
   retaining the typed participant gate
+- Keep visible first-responder ownership scoped to the active roulette screen
+  so physical shake delivery matches the documented winner action
 - Keep each visible participant row mapped to a typed legacy-array entry
 - Keep participant removal guarded by row index checks
 - Keep winner destination handling guarded before winner data is assigned

@@ -34,6 +34,9 @@ Helpful reports include:
   navigating to winner presentation.
 - Shake navigation should use UIKit's authoritative motion argument while
   retaining the typed participant gate.
+- Visible first-responder ownership is limited to the active roulette screen;
+  it does not add participant persistence, analytics, networking, or payment
+  processing.
 - Visible participant rows should map through typed entries before rendering or
   removal so malformed legacy values remain inert.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions

@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-16
+
+- Added visible first-responder ownership to the active roulette screen so
+  physical shake input reaches the existing typed winner route.
+
 ## 2026-06-14
 
 - Routed shake winner actions from UIKit's authoritative motion argument while

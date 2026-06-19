@@ -48,6 +48,8 @@
 - Participant names and payment choices should remain local-only. Do not add storage, upload, analytics, or real payment processing without a separate privacy and security design.
 - Route shake winner actions from UIKit's authoritative motion argument and
   retain the typed participant gate.
+- Preserve visible first-responder ownership so physical shake input reaches
+  the roulette controller only while that screen is active.
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
