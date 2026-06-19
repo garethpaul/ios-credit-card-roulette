@@ -98,6 +98,50 @@ class CardRouletteTests: XCTestCase {
         XCTAssertTrue(controller.canPickWinner(), "A typed participant should enable winner presentation")
     }
 
+    func testCanPickWinnerRejectsTypedParticipantsWithoutVisibleNames() {
+        let controller = ViewController()
+        controller.players.add(ParticipantListItem(name: ""))
+        controller.players.add(ParticipantListItem(name: " \n\t "))
+
+        XCTAssertFalse(controller.canPickWinner(), "Typed entries without nonempty visible names should not enable winner presentation")
+    }
+
+    func testPickAWinnerRejectsTypedParticipantsWithoutVisibleNames() {
+        let controller = ViewController()
+        controller.players.add(ParticipantListItem(name: ""))
+        controller.players.add(ParticipantListItem(name: " \n\t "))
+
+        XCTAssertNil(controller.pickAWinner(), "Winner selection should not return an empty participant name")
+    }
+
+    func testWinnerButtonAvailabilityFollowsInitialLoadAndRemoval() {
+        let controller = ViewController()
+        controller.pickWinner = UIButton()
+
+        controller.updateWinnerActionAvailability()
+        XCTAssertFalse(controller.pickWinner.isEnabled, "An empty participant list should disable the winner button")
+
+        controller.loadInitialData()
+        XCTAssertTrue(controller.pickWinner.isEnabled, "Initial typed participant data should enable the winner button")
+
+        XCTAssertTrue(controller.removeParticipantAtIndex(0))
+        XCTAssertFalse(controller.pickWinner.isEnabled, "Removing the final typed participant should disable the winner button")
+    }
+
+    func testParticipantUnwindEnablesWinnerButton() {
+        let controller = ViewController()
+        controller.pickWinner = UIButton()
+        controller.tableView = UITableView()
+        controller.updateWinnerActionAvailability()
+        let source = AddParticipantViewController()
+        source.participantItem = ParticipantListItem(name: "Gareth")
+        let segue = UIStoryboardSegue(identifier: "unwindToList", source: source, destination: controller)
+
+        controller.unwindToList(segue)
+
+        XCTAssertTrue(controller.pickWinner.isEnabled, "Adding a typed participant should enable the winner button")
+    }
+
     func testShakeMotionRequiresTypedParticipant() {
         let controller = ViewController()
 
@@ -190,6 +234,18 @@ class CardRouletteTests: XCTestCase {
         XCTAssertEqual(controller.tableView(UITableView(), numberOfRowsInSection: 0), 2)
         XCTAssertTrue(controller.participantItemForVisibleRow(0) === first)
         XCTAssertTrue(controller.participantItemForVisibleRow(1) === second)
+    }
+
+    func testVisibleParticipantRowsIgnoreTypedEntriesWithoutVisibleNames() {
+        let controller = ViewController()
+        let visible = ParticipantListItem(name: "Gareth")
+        controller.players.add(ParticipantListItem(name: ""))
+        controller.players.add(ParticipantListItem(name: " \n\t "))
+        controller.players.add(NSString(string: "invalid"))
+        controller.players.add(visible)
+
+        XCTAssertEqual(controller.tableView(UITableView(), numberOfRowsInSection: 0), 1)
+        XCTAssertTrue(controller.participantItemForVisibleRow(0) === visible)
     }
 
     func testVisibleParticipantRemovalMapsToTypedEntry() {
