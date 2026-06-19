@@ -26,6 +26,7 @@ HOSTED_XCTEST_PLAN = ROOT / "docs/plans/2026-06-12-hosted-xctest.md"
 PARTICIPANT_REMOVAL_TYPE_PLAN = ROOT / "docs/plans/2026-06-12-participant-removal-type-guard.md"
 TYPED_WINNER_TRIGGER_PLAN = ROOT / "docs/plans/2026-06-13-typed-winner-trigger.md"
 VISIBLE_PARTICIPANT_ROWS_PLAN = ROOT / "docs/plans/2026-06-13-visible-participant-rows.md"
+LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -54,15 +55,17 @@ jobs:
 """
 EXPECTED_MAKEFILE = """.PHONY: build check lint test
 
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
 lint: check
 
 test: check
-\t@if command -v xcodebuild >/dev/null 2>&1; then ./scripts/run-tests.sh; else printf '%s\\n' "Skipping XCTest: xcodebuild is not installed."; fi
+\t@if command -v xcodebuild >/dev/null 2>&1; then cd "$(ROOT)" && ./scripts/run-tests.sh; else printf '%s\\n' "Skipping XCTest: xcodebuild is not installed."; fi
 
 build: check
 
 check:
-\tpython3 scripts/check-baseline.py
+\t@python3 "$(ROOT)/scripts/check-baseline.py"
 """
 
 
@@ -189,6 +192,7 @@ def main():
         "docs/plans/2026-06-12-participant-removal-type-guard.md",
         "docs/plans/2026-06-13-typed-winner-trigger.md",
         "docs/plans/2026-06-13-visible-participant-rows.md",
+        "docs/plans/2026-06-13-location-independent-make.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -244,6 +248,7 @@ def main():
     participant_removal_type_plan = PARTICIPANT_REMOVAL_TYPE_PLAN.read_text(encoding="utf-8") if PARTICIPANT_REMOVAL_TYPE_PLAN.exists() else ""
     typed_winner_trigger_plan = TYPED_WINNER_TRIGGER_PLAN.read_text(encoding="utf-8") if TYPED_WINNER_TRIGGER_PLAN.exists() else ""
     visible_participant_rows_plan = VISIBLE_PARTICIPANT_ROWS_PLAN.read_text(encoding="utf-8") if VISIBLE_PARTICIPANT_ROWS_PLAN.exists() else ""
+    location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -456,6 +461,8 @@ def main():
     require("visible participant row" in readme.lower(),
             "README must document typed visible-row filtering",
             failures)
+    require("absolute Makefile path" in readme and "any working directory" in readme,
+            "README must document location-independent verification", failures)
     require("local-only" in readme.lower() and "participant" in readme.lower(),
             "README must document local-only participant data expectations",
             failures)
@@ -498,6 +505,8 @@ def main():
     require("visible participant row" in changes.lower(),
             "CHANGES must record typed visible-row filtering",
             failures)
+    require("Make verification target derive the checkout root" in changes and "external directories" in changes,
+            "CHANGES must record location-independent verification", failures)
     require("status: completed" in baseline_plan and "status: completed" in winner_input_plan and
             "status: completed" in cell_fallback_plan and "status: completed" in participant_normalizer_plan,
             "plans must be marked completed",
@@ -557,6 +566,11 @@ def main():
             "xcodebuild was unavailable" in visible_rows_verification,
             "visible participant rows plan must record completed local verification",
             failures)
+    location_statuses = re.findall(r"(?mi)^status:\s*(.+?)\s*$", location_independent_make_plan)
+    location_verification = markdown_section(location_independent_make_plan, "Verification Completed")
+    location_required = ("Root and external-directory Make gates passed", "root-derivation mutation failed", "checker-invocation mutation failed", "XCTest-runner mutation failed", "plan-status mutation failed", "plan-evidence mutation failed", "documentation mutation failed")
+    require(location_statuses == ["completed"] and all(item in location_verification for item in location_required) and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", location_verification),
+            "location-independent Make plan must record completed verification", failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan
     )
