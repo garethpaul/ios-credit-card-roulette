@@ -2,6 +2,8 @@
 
 ## 2026-06-16
 
+- Added single-flight winner presentation so concurrent button and shake inputs
+  cannot queue duplicate winner segues.
 - Added visible first-responder ownership to the active roulette screen so
   physical shake input reaches the existing typed winner route.
 

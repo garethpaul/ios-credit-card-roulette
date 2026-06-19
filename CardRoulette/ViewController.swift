@@ -40,6 +40,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     var players: NSMutableArray = []
     var logoView: UIImageView!
+    private var winnerPresentationInProgress = false
 
     override var canBecomeFirstResponder: Bool {
         return true
@@ -47,6 +48,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        winnerPresentationInProgress = false
         becomeFirstResponder()
     }
 
@@ -56,15 +58,24 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     @IBAction func clickBtn(_ sender: Any) {
-        if self.canPickWinner() {
-            self.performSegue(withIdentifier: "presentWinner", sender: self)
-        }
+        self.presentWinnerIfPossible()
     }
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if self.shouldPresentWinner(for: motion) {
-            self.performSegue(withIdentifier: "presentWinner", sender: self)
+            self.presentWinnerIfPossible()
         }
+    }
+
+    @discardableResult
+    func presentWinnerIfPossible() -> Bool {
+        guard !winnerPresentationInProgress && self.canPickWinner() else {
+            return false
+        }
+
+        winnerPresentationInProgress = true
+        self.performSegue(withIdentifier: "presentWinner", sender: self)
+        return true
     }
 
     func shouldPresentWinner(for motion: UIEvent.EventSubtype) -> Bool {

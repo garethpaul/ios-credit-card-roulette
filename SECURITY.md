@@ -37,6 +37,8 @@ Helpful reports include:
 - Visible first-responder ownership is limited to the active roulette screen;
   it does not add participant persistence, analytics, networking, or payment
   processing.
+- Single-flight winner presentation rejects duplicate button or shake
+  navigation while a winner transition is already in progress.
 - Visible participant rows should map through typed entries before rendering or
   removal so malformed legacy values remain inert.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions

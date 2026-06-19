@@ -26,6 +26,8 @@ Priority:
   retaining the typed participant gate
 - Keep visible first-responder ownership scoped to the active roulette screen
   so physical shake delivery matches the documented winner action
+- Keep button and shake actions behind single-flight winner presentation so a
+  visible round can request only one winner transition
 - Keep each visible participant row mapped to a typed legacy-array entry
 - Keep participant removal guarded by row index checks
 - Keep winner destination handling guarded before winner data is assigned

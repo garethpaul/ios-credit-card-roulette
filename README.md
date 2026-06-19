@@ -64,6 +64,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
   typed participant gate, so a nil event cannot suppress a valid shake.
 - Visible first-responder ownership acquires shake delivery when the roulette
   screen appears and relinquishes it as the screen disappears.
+- Button and shake inputs share single-flight winner presentation, preventing a
+  second input from queuing another winner segue during the same transition.
 - Winner destination controllers are checked before winner data is assigned.
 - Participant removal checks row indexes before mutating the legacy player list.
 - Table rows use a fallback cell if the storyboard reuse identifier is unavailable.

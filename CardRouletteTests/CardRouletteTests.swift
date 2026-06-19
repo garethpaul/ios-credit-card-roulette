@@ -25,6 +25,16 @@ class RecordingResponderViewController: ViewController {
     }
 }
 
+class RecordingWinnerPresentationViewController: RecordingResponderViewController {
+    var performedWinnerSegueCount = 0
+
+    override func performSegue(withIdentifier identifier: String, sender: Any?) {
+        if identifier == "presentWinner" {
+            performedWinnerSegueCount += 1
+        }
+    }
+}
+
 class CardRouletteTests: XCTestCase {
 
     func testParticipantNameNormalizationTrimsWhitespace() {
@@ -119,6 +129,19 @@ class CardRouletteTests: XCTestCase {
         controller.viewWillDisappear(false)
         XCTAssertEqual(controller.becomeFirstResponderCount, 1)
         XCTAssertEqual(controller.resignFirstResponderCount, 1)
+    }
+
+    func testWinnerPresentationIsSingleFlightAcrossButtonAndShake() {
+        let controller = RecordingWinnerPresentationViewController()
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+
+        controller.clickBtn(self)
+        controller.motionEnded(.motionShake, with: nil)
+        XCTAssertEqual(controller.performedWinnerSegueCount, 1, "Concurrent winner inputs should request only one segue")
+
+        controller.viewDidAppear(false)
+        controller.motionEnded(.motionShake, with: nil)
+        XCTAssertEqual(controller.performedWinnerSegueCount, 2, "Returning to the roulette should permit a later winner round")
     }
 
     func testParticipantItemAtIndexRejectsInvalidEntries() {
