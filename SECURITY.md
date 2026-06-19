@@ -32,6 +32,8 @@ Helpful reports include:
 - `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, participant-name normalization, participant unwind handling, typed participant filtering, participant removal index checks, winner destination handling, navigation logo title view ownership, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
 - A typed winner trigger should prevent invalid legacy array entries from
   navigating to winner presentation.
+- Shake navigation should use UIKit's authoritative motion argument while
+  retaining the typed participant gate.
 - Visible participant rows should map through typed entries before rendering or
   removal so malformed legacy values remain inert.
 - The pinned GitHub Actions macOS workflow uses read-only repository permissions

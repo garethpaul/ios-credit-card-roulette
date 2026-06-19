@@ -27,6 +27,7 @@ PARTICIPANT_REMOVAL_TYPE_PLAN = ROOT / "docs/plans/2026-06-12-participant-remova
 TYPED_WINNER_TRIGGER_PLAN = ROOT / "docs/plans/2026-06-13-typed-winner-trigger.md"
 VISIBLE_PARTICIPANT_ROWS_PLAN = ROOT / "docs/plans/2026-06-13-visible-participant-rows.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
+SHAKE_MOTION_PLAN = ROOT / "docs/plans/2026-06-14-shake-motion-routing.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -193,6 +194,7 @@ def main():
         "docs/plans/2026-06-13-typed-winner-trigger.md",
         "docs/plans/2026-06-13-visible-participant-rows.md",
         "docs/plans/2026-06-13-location-independent-make.md",
+        "docs/plans/2026-06-14-shake-motion-routing.md",
         "img/app.gif",
         "scripts/run-tests.sh",
     ]
@@ -249,6 +251,7 @@ def main():
     typed_winner_trigger_plan = TYPED_WINNER_TRIGGER_PLAN.read_text(encoding="utf-8") if TYPED_WINNER_TRIGGER_PLAN.exists() else ""
     visible_participant_rows_plan = VISIBLE_PARTICIPANT_ROWS_PLAN.read_text(encoding="utf-8") if VISIBLE_PARTICIPANT_ROWS_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
+    shake_motion_plan = SHAKE_MOTION_PLAN.read_text(encoding="utf-8") if SHAKE_MOTION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -294,12 +297,16 @@ def main():
             "participantItems.isEmpty" in view_controller,
             "Winner selection must return nil when no typed participants are available",
             failures)
+    motion_ended_body = swift_function_body(view_controller, "override func motionEnded")
+    shake_predicate_body = swift_function_body(view_controller, "func shouldPresentWinner")
     require("func canPickWinner() -> Bool" in view_controller and
             "return !self.participantItems().isEmpty" in view_controller and
             "if self.canPickWinner()" in view_controller and
-            "event?.subtype == .motionShake && self.canPickWinner()" in view_controller and
+            "self.shouldPresentWinner(for: motion)" in motion_ended_body and
+            "event?.subtype" not in motion_ended_body and
+            "motion == .motionShake && self.canPickWinner()" in shake_predicate_body and
             "self.players.count > 0" not in view_controller,
-            "button and shake winner actions must require a typed participant",
+            "button and authoritative shake-motion winner actions must require a typed participant",
             failures)
     require("func participantItemFromSegueSource(_ source: Any?) -> ParticipantListItem?" in view_controller and
             "source as? AddParticipantViewController" in view_controller and
@@ -389,6 +396,10 @@ def main():
             "testCanPickWinnerAcceptsTypedParticipantAmongInvalidEntries" in tests and
             tests.count("XCTAssertFalse(controller.canPickWinner()") == 2 and
             "XCTAssertTrue(controller.canPickWinner()" in tests and
+            "testShakeMotionRequiresTypedParticipant" in tests and
+            tests.count("controller.shouldPresentWinner(for: .motionShake)") == 3 and
+            "testNonShakeMotionDoesNotPresentWinner" in tests and
+            "controller.shouldPresentWinner(for: .remoteControlPlay)" in tests and
             "testParticipantItemAtIndexRejectsInvalidEntries" in tests and
             "testRemoveParticipantAtIndexRemovesValidEntry" in tests and
             "testRemoveParticipantAtIndexRejectsInvalidIndexes" in tests and
@@ -571,6 +582,37 @@ def main():
     location_required = ("Root and external-directory Make gates passed", "root-derivation mutation failed", "checker-invocation mutation failed", "XCTest-runner mutation failed", "plan-status mutation failed", "plan-evidence mutation failed", "documentation mutation failed")
     require(location_statuses == ["completed"] and all(item in location_verification for item in location_required) and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", location_verification),
             "location-independent Make plan must record completed verification", failures)
+    shake_motion_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", shake_motion_plan
+    )
+    shake_motion_verification = markdown_section(
+        shake_motion_plan, "Verification Completed"
+    )
+    shake_motion_required = (
+        "All four Make gates",
+        "absolute Makefile check",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n scripts/run-tests.sh",
+        "Five isolated hostile mutations",
+        "git diff --check",
+        "xcodebuild was unavailable",
+    )
+    require(shake_motion_statuses == ["completed"]
+            and all(item in shake_motion_verification
+                    for item in shake_motion_required)
+            and not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b",
+                              shake_motion_verification),
+            "shake motion routing plan must record completed verification",
+            failures)
+    normalized_guidance = [
+        " ".join(document.lower().split())
+        for document in [readme, vision, security, changes, read("AGENTS.md")]
+    ]
+    require(all("authoritative motion argument" in document and
+                "typed participant" in document
+                for document in normalized_guidance),
+            "project guidance must document authoritative shake routing",
+            failures)
     participant_removal_type_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", participant_removal_type_plan
     )

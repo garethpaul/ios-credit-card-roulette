@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-14
+
+- Routed shake winner actions from UIKit's authoritative motion argument while
+  retaining the typed participant gate.
+
 ## 2026-06-13
 
 - Made every Make verification target derive the checkout root so static and

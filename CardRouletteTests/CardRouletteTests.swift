@@ -73,6 +73,25 @@ class CardRouletteTests: XCTestCase {
         XCTAssertTrue(controller.canPickWinner(), "A typed participant should enable winner presentation")
     }
 
+    func testShakeMotionRequiresTypedParticipant() {
+        let controller = ViewController()
+
+        XCTAssertFalse(controller.shouldPresentWinner(for: .motionShake))
+
+        controller.players.add(NSString(string: "invalid"))
+        XCTAssertFalse(controller.shouldPresentWinner(for: .motionShake))
+
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+        XCTAssertTrue(controller.shouldPresentWinner(for: .motionShake))
+    }
+
+    func testNonShakeMotionDoesNotPresentWinner() {
+        let controller = ViewController()
+        controller.players.add(ParticipantListItem(name: "Hemal"))
+
+        XCTAssertFalse(controller.shouldPresentWinner(for: .remoteControlPlay))
+    }
+
     func testParticipantItemAtIndexRejectsInvalidEntries() {
         let controller = ViewController()
         controller.players.add(NSString(string: "invalid"))
