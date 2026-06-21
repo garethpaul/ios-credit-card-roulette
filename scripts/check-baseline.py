@@ -201,6 +201,8 @@ def main():
         "docs/plans/2026-06-16-shake-first-responder-lifecycle.md",
         "img/app.gif",
         "scripts/run-tests.sh",
+        "scripts/test-make-trust-boundary.py",
+        "docs/plans/2026-06-21-make-trust-boundary.md",
     ]
 
     for relative_path in required_files:
@@ -262,6 +264,7 @@ def main():
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
+    subprocess.check_call([sys.executable, "scripts/test-make-trust-boundary.py"], cwd=ROOT)
     require((ROOT / "scripts/run-tests.sh").stat().st_mode & 0o111,
             "scripts/run-tests.sh must be executable",
             failures)

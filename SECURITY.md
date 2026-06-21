@@ -30,6 +30,10 @@ Helpful reports include:
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - This sample must not collect, store, or process credit card numbers. Treat any real payment processing, persistence, analytics, or participant-data sharing as security-sensitive scope expansion.
 - `make check` runs a static baseline that guards plist/storyboard metadata, Xcode project wiring, source inventory, participant-name normalization, participant unwind handling, typed and nonempty participant filtering, participant removal index checks, winner destination handling, navigation logo title view ownership, empty-list winner selection, winner-screen input handling, hex parser fallback behavior, and logging/network/persistence regressions when Xcode is unavailable.
+- The checked-in Makefile trust boundary covers the unmodified repository Makefile
+  with trusted shell and PATH tools. Caller-supplied extra/startup Makefiles,
+  target-specific overrides, replacement recipes, shell/tool substitutions, and
+  no-execution flags control GNU Make itself and remain outside that local contract.
 - A typed winner trigger with a nonempty-name guard should prevent invalid
   legacy array entries from navigating to winner presentation.
 - Shake navigation should use UIKit's authoritative motion argument while

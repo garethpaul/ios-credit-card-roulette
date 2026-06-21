@@ -95,6 +95,15 @@ stay available while preserving the single source of truth.
 When Xcode is available, `scripts/run-tests.sh` accepts `DERIVED_DATA_PATH` and
 defaults DerivedData under the system temp directory.
 
+These commands are authoritative only within the checked-in Makefile trust boundary:
+use the unmodified repository Makefile without caller-supplied extra or startup Makefiles,
+caller-selected `SHELL`, `.SHELLFLAGS`, or `PATH` tools, target-specific overrides or replacement recipes,
+or no-execution flags such as `-n` or `-t`. GNU Make intentionally gives callers
+control over parsing and recipe execution, so those inputs can run code before the
+repository is evaluated or return success without executing the baseline. They are
+outside the local verification contract rather than security boundaries enforced by
+the Makefile.
+
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed and nonempty participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
@@ -106,9 +115,9 @@ data, perform payment processing, deploy, or use signing material.
 For runtime verification on macOS, launch the sample in a simulator and exercise
 participant entry, removal, and winner selection without entering payment data.
 
-GitHub Actions runs the same Python static `make check` baseline on Ubuntu for
-pushes and pull requests. Full simulator and device verification remains a
-macOS Xcode task.
+GitHub Actions runs `make test` on `macos-15` for pushes and pull requests. That
+job runs the Python static baseline before the macOS simulator XCTest gate; the
+checked-in workflow does not define a separate Ubuntu job.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

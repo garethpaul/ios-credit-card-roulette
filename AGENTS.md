@@ -34,6 +34,10 @@
 - Test-related files detected: `CardRouletteTests/CardRouletteTests.swift`
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
+- The checked-in Makefile trust boundary assumes the unmodified repository Makefile,
+  trusted shell and PATH tools, and no caller-supplied extra/startup Makefiles,
+  target-specific overrides, replacement recipes, or no-execution flags. Treat
+  caller-controlled Make programs and execution settings as outside the local gate.
 
 ## PR / change guidance
 
