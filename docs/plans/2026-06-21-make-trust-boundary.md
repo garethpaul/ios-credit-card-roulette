@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use test-driven development to implement this plan task-by-task.
 
-**Goal:** Keep the local Make verification contract truthful about GNU Make caller authority and align workflow documentation with the checked-in macOS job.
+**Goal:** Enforce the repository-owned portion of the Make verification contract, document GNU Make's unavoidable caller boundary, and align the workflow with the checked-in macOS job.
 
-**Architecture:** Preserve the application, project, XCTest, workflow, and native runner unchanged. Add a repository-owned Python regression harness that executes the real Makefile against isolated marker fixtures, then run that harness from the existing static baseline so documentation and boundary behavior cannot drift silently.
+**Architecture:** Preserve the application, project, XCTest, and app behavior. Freeze the shell, checkout root, Python runner, and Xcode runner in the Makefile; reject unsafe modes and replaceable recipes; and execute a repository-owned regression harness from the static baseline.
 
 **Tech Stack:** GNU Make, Python standard library, POSIX shell, Xcode project metadata.
 
@@ -13,14 +13,12 @@
 ## Scope
 
 1. Prove canonical and absolute-Makefile external-directory aliases execute the repository baseline.
-2. Reproduce caller-selected shell/PATH tools, startup and later Makefiles,
-   target-specific root overrides, replacement recipes, and no-execution modes.
-3. Document those caller-controlled mechanisms outside the checked-in Makefile
-   trust boundary rather than claiming the repository Makefile can prohibit them.
+2. Reject caller-selected shell/PATH tools, target-specific root/tool overrides,
+   replacement recipes, and non-executing or error-ignoring modes.
+3. Prove and document that startup Makefiles can execute parse-time code before rejection and later double-colon recipes remain caller authority.
 4. Correct the stale Ubuntu workflow statement to the actual `macos-15`
    `make test` job.
-5. Keep app sources, project metadata, XCTest, workflow, native runner, and
-   dependency state byte-for-byte unchanged.
+5. Keep app sources, project metadata, XCTest, and dependency state unchanged.
 
 ## Test-First Evidence
 
@@ -32,9 +30,13 @@ then made the same harness pass.
 
 ## Enforceable Contract
 
-The local aliases are valid when invoked through the unmodified checked-in
-Makefile with trusted shell and PATH tools and without caller-supplied extra or
-startup Makefiles, target-specific overrides, replacement recipes, or
-no-execution flags. GNU Make callers control parsing and execution outside that
-contract; the repository documents and tests that fact instead of presenting a
-convenience Makefile as a security boundary.
+The local aliases fix `/bin/sh`, repository-owned Python and Xcode launchers,
+and the canonical checkout root. They reject replacement recipes,
+target-specific root/tool substitutions, and non-executing or error-ignoring modes.
+Startup Makefiles can execute parse-time code before rejection, and later
+double-colon recipes remain caller authority because GNU Make appends them after
+the checked-in recipe. The harness proves both limits instead of overstating the
+Makefile as a complete security boundary.
+Make syntax in an explicit `-f` path is evaluated before the repository loads.
+The hostile-path proof therefore requires paths containing literal `$(` to be
+invoked from inside the checkout without an explicit Makefile path.

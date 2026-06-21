@@ -83,10 +83,10 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 Run the local static baseline:
 
 ```bash
-make lint
-make test
-make build
-make check
+/usr/bin/make lint
+/usr/bin/make test
+/usr/bin/make build
+/usr/bin/make check
 ```
 
 The `lint`, `test`, and `build` targets intentionally alias the canonical baseline
@@ -95,18 +95,20 @@ stay available while preserving the single source of truth.
 When Xcode is available, `scripts/run-tests.sh` accepts `DERIVED_DATA_PATH` and
 defaults DerivedData under the system temp directory.
 
-These commands are authoritative only within the checked-in Makefile trust boundary:
-use the unmodified repository Makefile without caller-supplied extra or startup Makefiles,
-caller-selected `SHELL`, `.SHELLFLAGS`, or `PATH` tools, target-specific overrides or replacement recipes,
-or no-execution flags such as `-n` or `-t`. GNU Make intentionally gives callers
-control over parsing and recipe execution, so those inputs can run code before the
-repository is evaluated or return success without executing the baseline. They are
-outside the local verification contract rather than security boundaries enforced by
-the Makefile.
+The checked-in Makefile fixes `/bin/sh`, repository-owned Python and Xcode
+launchers, and the canonical checkout root. It rejects replacement recipes,
+target-specific root/tool substitutions, and non-executing or error-ignoring modes.
+Startup Makefiles can execute parse-time code before rejection, and later
+double-colon recipes remain caller authority because GNU Make appends them after
+the repository recipe. Hosted verification invokes `/usr/bin/make` without either
+caller program.
+Make syntax in an explicit `-f` path is evaluated before the repository loads;
+for a checkout path containing literal `$(`, change into the checkout and invoke
+`/usr/bin/make` without an explicit Makefile path.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed and nonempty participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
-The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
+The pinned GitHub Actions check runs `/usr/bin/make test` on `macos-15`. It first runs
 the static baseline, then compiles the unsigned Swift 5 app and executes twenty-seven
 participant normalization, array-safety, removal, unwind, and winner-destination
 tests on an available iPhone simulator. It does not persist or upload participant

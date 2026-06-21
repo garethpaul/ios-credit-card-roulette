@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-21
+
+- Isolated Make verification from caller-selected shell, Python, Xcode, root,
+  replacement recipes, and non-executing or error-ignoring modes while
+  documenting GNU Make's startup and later double-colon caller boundary.
+
 ## 2026-06-19
 
 - Tightened winner and visible-row eligibility to typed participants with
