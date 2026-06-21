@@ -83,10 +83,10 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 Run the local static baseline:
 
 ```bash
-make lint
-make test
-make build
-make check
+/usr/bin/make lint
+/usr/bin/make test
+/usr/bin/make build
+/usr/bin/make check
 ```
 
 The `lint`, `test`, and `build` targets intentionally alias the canonical baseline
@@ -95,9 +95,20 @@ stay available while preserving the single source of truth.
 When Xcode is available, `scripts/run-tests.sh` accepts `DERIVED_DATA_PATH` and
 defaults DerivedData under the system temp directory.
 
+The checked-in Makefile fixes `/bin/sh`, repository-owned Python and Xcode
+launchers, and the canonical checkout root. It rejects replacement recipes,
+target-specific root/tool substitutions, and non-executing or error-ignoring modes.
+Startup Makefiles can execute parse-time code before rejection, and later
+double-colon recipes remain caller authority because GNU Make appends them after
+the repository recipe. Hosted verification invokes `/usr/bin/make` without either
+caller program.
+Make syntax in an explicit `-f` path is evaluated before the repository loads;
+for a checkout path containing literal `$(`, change into the checkout and invoke
+`/usr/bin/make` without an explicit Makefile path.
+
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed and nonempty participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
-The pinned GitHub Actions check runs `make test` on `macos-15`. It first runs
+The pinned GitHub Actions check runs `/usr/bin/make test` on `macos-15`. It first runs
 the static baseline, then compiles the unsigned Swift 5 app and executes twenty-seven
 participant normalization, array-safety, removal, unwind, and winner-destination
 tests on an available iPhone simulator. It does not persist or upload participant
@@ -106,9 +117,9 @@ data, perform payment processing, deploy, or use signing material.
 For runtime verification on macOS, launch the sample in a simulator and exercise
 participant entry, removal, and winner selection without entering payment data.
 
-GitHub Actions runs the same Python static `make check` baseline on Ubuntu for
-pushes and pull requests. Full simulator and device verification remains a
-macOS Xcode task.
+GitHub Actions runs `make test` on `macos-15` for pushes and pull requests. That
+job runs the Python static baseline before the macOS simulator XCTest gate; the
+checked-in workflow does not define a separate Ubuntu job.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

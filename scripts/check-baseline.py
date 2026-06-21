@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import os
 import plistlib
 import re
 import shutil
@@ -55,21 +56,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate roulette baseline and XCTest
-        run: make test
-"""
-EXPECTED_MAKEFILE = """.PHONY: build check lint test
-
-override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-
-lint: check
-
-test: check
-\t@if command -v xcodebuild >/dev/null 2>&1; then cd "$(ROOT)" && ./scripts/run-tests.sh; else printf '%s\\n' "Skipping XCTest: xcodebuild is not installed."; fi
-
-build: check
-
-check:
-\t@python3 "$(ROOT)/scripts/check-baseline.py"
+        run: /usr/bin/make test
 """
 
 
@@ -201,6 +188,10 @@ def main():
         "docs/plans/2026-06-16-shake-first-responder-lifecycle.md",
         "img/app.gif",
         "scripts/run-tests.sh",
+        "scripts/run-python.sh",
+        "scripts/run-xcodebuild.sh",
+        "scripts/test-make-trust-boundary.py",
+        "docs/plans/2026-06-21-make-trust-boundary.md",
     ]
 
     for relative_path in required_files:
@@ -261,10 +252,12 @@ def main():
     winner_action_availability_plan = WINNER_ACTION_AVAILABILITY_PLAN.read_text(encoding="utf-8") if WINNER_ACTION_AVAILABILITY_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
-    subprocess.check_call(["sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
-    require((ROOT / "scripts/run-tests.sh").stat().st_mode & 0o111,
-            "scripts/run-tests.sh must be executable",
-            failures)
+    subprocess.check_call(["/bin/sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
+    subprocess.check_call([sys.executable, "scripts/test-make-trust-boundary.py"], cwd=ROOT)
+    for executable in ("run-tests.sh", "run-python.sh", "run-xcodebuild.sh", "test-make-trust-boundary.py"):
+        require((ROOT / "scripts" / executable).stat().st_mode & 0o111,
+                f"scripts/{executable} must be executable",
+                failures)
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -512,10 +505,19 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require(makefile == EXPECTED_MAKEFILE,
-            "Makefile must exactly preserve static and XCTest verification gates",
-            failures)
-    require("xcrun simctl list devices available" in test_runner and
+    for make_contract in (
+        "override SHELL := /bin/sh",
+        "override PYTHON := $(ROOT)/scripts/run-python.sh",
+        "override XCODEBUILD := $(ROOT)/scripts/run-xcodebuild.sh",
+        "MAKEFILES must be empty",
+        "MAKEFLAGS must not be overridden",
+        "repository Makefile must be loaded alone",
+        '"$$PYTHON" "$$ROOT/scripts/check-baseline.py"',
+    ):
+        require(make_contract in makefile,
+                f"Makefile must preserve authority contract: {make_contract}",
+                failures)
+    require("/usr/bin/xcrun simctl list devices available" in test_runner and
             "IOS_DESTINATION" in test_runner and "IOS_SIMULATOR_NAME" in test_runner and
             "DERIVED_DATA_PATH" in test_runner and
             '-scheme "$SCHEME"' in test_runner and '-destination "$DESTINATION"' in test_runner and
@@ -806,10 +808,11 @@ def main():
             "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",
             failures)
 
-    if shutil.which("xcodebuild"):
+    xcodebuild = Path("/usr/bin/xcodebuild")
+    if xcodebuild.is_file() and os.access(xcodebuild, os.X_OK):
         result = subprocess.run(
             [
-                "xcodebuild",
+                str(xcodebuild),
                 "-list",
                 "-project", "CardRoulette.xcodeproj",
             ],

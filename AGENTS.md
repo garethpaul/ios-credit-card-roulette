@@ -17,8 +17,8 @@
 ## Development commands
 
 - Install dependencies: no repository-specific install command is documented.
-- Full baseline: `make check`
-- Hosted/local XCTest gate: `make test`
+- Full baseline: `/usr/bin/make check`
+- Hosted/local XCTest gate: `/usr/bin/make test`
 - Simulator overrides: `IOS_DESTINATION` or `IOS_SIMULATOR_NAME`
 - Xcode artifact override: `DERIVED_DATA_PATH`
 - Local Apple development: `open CardRoulette.xcodeproj`
@@ -32,8 +32,15 @@
 ## Testing guidance
 
 - Test-related files detected: `CardRouletteTests/CardRouletteTests.swift`
-- Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
+- Start with the narrowest relevant test or Make target, then run `/usr/bin/make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
+- The checked-in Makefile fixes `/bin/sh`, repository-owned Python and Xcode
+  launchers, the checkout root, and rejects non-executing or error-ignoring modes.
+- Startup Makefiles can execute parse-time code before rejection, and later
+  double-colon recipes remain caller authority. Do not use those caller programs
+  when collecting repository validation evidence.
+- Make syntax in an explicit `-f` path is evaluated before the repository loads;
+  use the checkout as the working directory for paths containing literal `$(`.
 
 ## PR / change guidance
 
