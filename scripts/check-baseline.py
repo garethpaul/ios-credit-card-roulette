@@ -64,6 +64,9 @@ TARGET_CONFIGURATION_TOPOLOGY = (
         "CardRoulette",
         "FDAE1E6E1B1A487600A89C51",
         "FDAE1E8E1B1A487600A89C51",
+        "FDAE1E6F1B1A487600A89C51",
+        "wrapper.application",
+        "CardRoulette.app",
         "com.apple.product-type.application",
         "CardRoulette/Info.plist",
         "com.gpj.CardRoulette",
@@ -76,6 +79,9 @@ TARGET_CONFIGURATION_TOPOLOGY = (
         "CardRouletteTests",
         "FDAE1E831B1A487600A89C51",
         "FDAE1E911B1A487600A89C51",
+        "FDAE1E841B1A487600A89C51",
+        "wrapper.cfbundle",
+        "CardRouletteTests.xctest",
         "com.apple.product-type.bundle.unit-test",
         "CardRouletteTests/Info.plist",
         "com.gpj.CardRouletteTests",
@@ -127,6 +133,54 @@ def strip_swift_line_comments(text):
     return "\n".join(stripped_lines)
 
 
+def strip_pbx_comments(text):
+    output = []
+    in_block_comment = False
+    in_line_comment = False
+    in_string = False
+    escaped = False
+    index = 0
+    while index < len(text):
+        character = text[index]
+        next_character = text[index + 1] if index + 1 < len(text) else ""
+        if in_block_comment:
+            if character == "*" and next_character == "/":
+                output.extend((" ", " "))
+                in_block_comment = False
+                index += 2
+                continue
+            output.append("\n" if character == "\n" else " ")
+            index += 1
+            continue
+        if in_line_comment:
+            if character == "\n":
+                output.append(character)
+                in_line_comment = False
+            else:
+                output.append(" ")
+            index += 1
+            continue
+        if not in_string and character == "/" and next_character == "*":
+            output.extend((" ", " "))
+            in_block_comment = True
+            index += 2
+            continue
+        if not in_string and character == "/" and next_character == "/":
+            output.extend((" ", " "))
+            in_line_comment = True
+            index += 2
+            continue
+        output.append(character)
+        if character == '"' and not escaped:
+            in_string = not in_string
+        if character == "\\" and not escaped:
+            escaped = True
+        else:
+            escaped = False
+        index += 1
+    return "".join(output)
+
+
 def swift_function_body(text, signature):
     start = text.find(signature)
     if start == -1:
@@ -165,10 +219,13 @@ def parse_plist(relative_path, failures):
 
 
 def pbx_object_body(project, object_uuid):
-    object_matches = list(re.finditer(
-        rf"(?m)^\s*{re.escape(object_uuid)} /\* [^\n]+ \*/ = \{{",
-        project,
-    ))
+    object_matches = [
+        match for match in re.finditer(
+            rf"(?m)^(?P<indent>[ \t]*){re.escape(object_uuid)}[ \t]*=[ \t]*\{{",
+            project,
+        )
+        if match.group("indent") == "\t\t"
+    ]
     if len(object_matches) != 1:
         return ""
 
@@ -192,10 +249,145 @@ def pbx_configuration_references(configuration_list_body):
     )
     if not match:
         return ()
-    return tuple(re.findall(
-        r"([A-F0-9]{24}) /\* (Debug|Release) \*/",
-        match.group(1),
-    ))
+    return tuple(re.findall(r"(?m)^\s*([A-F0-9]{24})\s*,", match.group(1)))
+
+
+def pbx_setting_values(object_body, setting):
+    return [
+        value.strip() for value in re.findall(
+            rf"(?m)(?:^|[;\n])\s*{re.escape(setting)}\s*=\s*([^;]+);",
+            object_body,
+        )
+    ]
+
+
+def pbx_object_uuids_by_isa(project, isa):
+    object_uuids = []
+    for match in re.finditer(
+        r"(?m)^(?P<indent>[ \t]*)(?P<uuid>[A-F0-9]{24})[ \t]*=[ \t]*\{",
+        project,
+    ):
+        if match.group("indent") != "\t\t":
+            continue
+        object_body = pbx_object_body(project, match.group("uuid"))
+        if pbx_setting_values(object_body, "isa") == [isa]:
+            object_uuids.append(match.group("uuid"))
+    return tuple(object_uuids)
+
+
+def validate_project_topology(project, app_plist, test_plist, failures):
+    active_project = strip_pbx_comments(project)
+    require(app_plist.get("CFBundlePackageType") == "APPL",
+            "CardRoulette Info.plist must remain an application plist",
+            failures)
+    require(test_plist.get("CFBundlePackageType") == "BNDL",
+            "CardRouletteTests Info.plist must remain a test bundle plist",
+            failures)
+    require(app_plist.get("CFBundleIdentifier") == "com.gpj.$(PRODUCT_NAME:rfc1034identifier)",
+            "CardRoulette Info.plist must preserve the product-name bundle identifier template",
+            failures)
+    require(test_plist.get("CFBundleIdentifier") == "com.gpj.$(PRODUCT_NAME:rfc1034identifier)",
+            "CardRouletteTests Info.plist must preserve the product-name bundle identifier template",
+            failures)
+
+    project_body = pbx_object_body(active_project, "FDAE1E671B1A487600A89C51")
+    target_list = re.search(r"(?ms)targets\s*=\s*\(\s*(.*?)\s*\);", project_body)
+    require(
+        bool(target_list) and tuple(re.findall(
+            r"(?m)^\s*([A-F0-9]{24})\s*,", target_list.group(1)
+        )) == tuple(topology[1] for topology in TARGET_CONFIGURATION_TOPOLOGY),
+        "Xcode project must preserve the exact ordered app/test target UUID topology",
+        failures,
+    )
+    require(
+        pbx_object_uuids_by_isa(active_project, "PBXNativeTarget") == tuple(
+            topology[1] for topology in TARGET_CONFIGURATION_TOPOLOGY
+        ),
+        "Xcode project must contain only the exact app/test PBXNativeTarget UUIDs",
+        failures,
+    )
+
+    for (target_name, target_uuid, configuration_list_uuid, product_uuid,
+         product_file_type, product_path, product_type, plist_path,
+         bundle_identifier, configurations) in TARGET_CONFIGURATION_TOPOLOGY:
+        target_body = pbx_object_body(active_project, target_uuid)
+        require(bool(target_body),
+                f"Xcode project must preserve the unique {target_name} target UUID {target_uuid}",
+                failures)
+        require(pbx_setting_values(target_body, "isa") == ["PBXNativeTarget"],
+                f"{target_name} target UUID must remain a PBXNativeTarget",
+                failures)
+        require(pbx_setting_values(target_body, "name") == [target_name],
+                f"{target_name} target UUID must retain the exact target name",
+                failures)
+        require(pbx_setting_values(target_body, "productName") == [target_name],
+                f"{target_name} target must retain productName {target_name}",
+                failures)
+        require(pbx_setting_values(target_body, "buildConfigurationList") == [configuration_list_uuid],
+                f"{target_name} target must remain wired to configuration list {configuration_list_uuid}",
+                failures)
+        require(pbx_setting_values(target_body, "productReference") == [product_uuid],
+                f"{target_name} target must remain wired to product {product_uuid}",
+                failures)
+        require(pbx_setting_values(target_body, "productType") == [f'"{product_type}"'],
+                f"{target_name} target must retain product type {product_type}",
+                failures)
+
+        product_body = pbx_object_body(active_project, product_uuid)
+        require(bool(product_body),
+                f"Xcode project must preserve the unique {target_name} product UUID {product_uuid}",
+                failures)
+        require(pbx_setting_values(product_body, "isa") == ["PBXFileReference"],
+                f"{target_name} product UUID must remain a PBXFileReference",
+                failures)
+        require(pbx_setting_values(product_body, "explicitFileType") == [product_file_type],
+                f"{target_name} product must retain file type {product_file_type}",
+                failures)
+        require(pbx_setting_values(product_body, "path") == [product_path],
+                f"{target_name} product must retain path {product_path}",
+                failures)
+        require(pbx_setting_values(product_body, "sourceTree") == ["BUILT_PRODUCTS_DIR"],
+                f"{target_name} product must remain in BUILT_PRODUCTS_DIR",
+                failures)
+
+        configuration_list_body = pbx_object_body(active_project, configuration_list_uuid)
+        require(bool(configuration_list_body),
+                f"Xcode project must preserve the unique {target_name} configuration list UUID {configuration_list_uuid}",
+                failures)
+        require(
+            pbx_configuration_references(configuration_list_body) == tuple(
+                configuration_uuid for _, configuration_uuid in configurations
+            ),
+            f"{target_name} configuration list must preserve the exact ordered Debug/Release UUID topology",
+            failures,
+        )
+
+        for configuration_name, configuration_uuid in configurations:
+            configuration_body = pbx_object_body(active_project, configuration_uuid)
+            require(bool(configuration_body),
+                    f"Xcode project must preserve the unique {target_name} {configuration_name} configuration UUID {configuration_uuid}",
+                    failures)
+            require(pbx_setting_values(configuration_body, "isa") == ["XCBuildConfiguration"],
+                    f"{target_name} {configuration_uuid} must remain an XCBuildConfiguration",
+                    failures)
+            require(pbx_setting_values(configuration_body, "name") == [configuration_name],
+                    f"{target_name} {configuration_uuid} must remain the {configuration_name} configuration",
+                    failures)
+            require(pbx_setting_values(configuration_body, "INFOPLIST_FILE") == [plist_path],
+                    f"{target_name} {configuration_name} must use {plist_path}",
+                    failures)
+            require(pbx_setting_values(configuration_body, "PRODUCT_BUNDLE_IDENTIFIER") == [bundle_identifier],
+                    f"{target_name} {configuration_name} must define exactly one "
+                    f"PRODUCT_BUNDLE_IDENTIFIER = {bundle_identifier}",
+                    failures)
+            require(pbx_setting_values(configuration_body, "PRODUCT_NAME") == ['"$(TARGET_NAME)"'],
+                    f"{target_name} {configuration_name} must derive PRODUCT_NAME from the bound target name",
+                    failures)
+    require(len(re.findall(
+        r"(?m)^\s*PRODUCT_BUNDLE_IDENTIFIER\s*=\s*[^;]+;", active_project
+    )) == 4,
+            "Xcode project must contain only the four active target-local bundle identifier mappings",
+            failures)
 
 
 def main():
@@ -252,6 +444,7 @@ def main():
         "scripts/run-python.sh",
         "scripts/run-xcodebuild.sh",
         "scripts/test-make-trust-boundary.py",
+        "scripts/test-project-topology.py",
         "docs/plans/2026-06-21-make-trust-boundary.md",
     ]
 
@@ -315,76 +508,12 @@ def main():
 
     subprocess.check_call(["/bin/sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
     subprocess.check_call([sys.executable, "scripts/test-make-trust-boundary.py"], cwd=ROOT)
-    for executable in ("run-tests.sh", "run-python.sh", "run-xcodebuild.sh", "test-make-trust-boundary.py"):
+    for executable in ("run-tests.sh", "run-python.sh", "run-xcodebuild.sh", "test-make-trust-boundary.py", "test-project-topology.py"):
         require((ROOT / "scripts" / executable).stat().st_mode & 0o111,
                 f"scripts/{executable} must be executable",
                 failures)
 
-    require(app_plist.get("CFBundlePackageType") == "APPL",
-            "CardRoulette Info.plist must remain an application plist",
-            failures)
-    require(test_plist.get("CFBundlePackageType") == "BNDL",
-            "CardRouletteTests Info.plist must remain a test bundle plist",
-            failures)
-    require(app_plist.get("CFBundleIdentifier") == "com.gpj.$(PRODUCT_NAME:rfc1034identifier)",
-            "CardRoulette Info.plist must preserve the product-name bundle identifier template",
-            failures)
-    require(test_plist.get("CFBundleIdentifier") == "com.gpj.$(PRODUCT_NAME:rfc1034identifier)",
-            "CardRouletteTests Info.plist must preserve the product-name bundle identifier template",
-            failures)
-    for (target_name, target_uuid, configuration_list_uuid, product_type,
-         plist_path, bundle_identifier, configurations) in TARGET_CONFIGURATION_TOPOLOGY:
-        target_body = pbx_object_body(project, target_uuid)
-        require(bool(target_body),
-                f"Xcode project must preserve the unique {target_name} target UUID {target_uuid}",
-                failures)
-        require(
-            target_body.count(
-                f'buildConfigurationList = {configuration_list_uuid} '
-                f'/* Build configuration list for PBXNativeTarget "{target_name}" */;'
-            ) == 1,
-            f"{target_name} target must remain wired to configuration list {configuration_list_uuid}",
-            failures,
-        )
-        require(target_body.count(f'productType = "{product_type}";') == 1,
-                f"{target_name} target must retain product type {product_type}",
-                failures)
-
-        configuration_list_body = pbx_object_body(project, configuration_list_uuid)
-        require(bool(configuration_list_body),
-                f"Xcode project must preserve the unique {target_name} configuration list UUID {configuration_list_uuid}",
-                failures)
-        require(
-            pbx_configuration_references(configuration_list_body) == tuple(
-                (configuration_uuid, configuration_name)
-                for configuration_name, configuration_uuid in configurations
-            ),
-            f"{target_name} configuration list must preserve the exact ordered Debug/Release UUID topology",
-            failures,
-        )
-
-        for configuration_name, configuration_uuid in configurations:
-            configuration_body = pbx_object_body(project, configuration_uuid)
-            require(bool(configuration_body),
-                    f"Xcode project must preserve the unique {target_name} {configuration_name} configuration UUID {configuration_uuid}",
-                    failures)
-            require(configuration_body.count(f"name = {configuration_name};") == 1,
-                    f"{target_name} {configuration_uuid} must remain the {configuration_name} configuration",
-                    failures)
-            require(configuration_body.count(f"INFOPLIST_FILE = {plist_path};") == 1,
-                    f"{target_name} {configuration_name} must use {plist_path}",
-                    failures)
-            identifier_settings = re.findall(
-                r"(?m)^\s*PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);",
-                configuration_body,
-            )
-            require(identifier_settings == [bundle_identifier],
-                    f"{target_name} {configuration_name} must define exactly one "
-                    f"PRODUCT_BUNDLE_IDENTIFIER = {bundle_identifier}",
-                    failures)
-    require(project.count("PRODUCT_BUNDLE_IDENTIFIER = ") == 4,
-            "Xcode project must contain only the four target-local bundle identifier mappings",
-            failures)
+    validate_project_topology(project, app_plist, test_plist, failures)
     require("ViewController.swift in Sources" in project and "INFOPLIST_FILE = CardRoulette/Info.plist" in project,
             "Xcode project must keep view controller and plist wiring",
             failures)
