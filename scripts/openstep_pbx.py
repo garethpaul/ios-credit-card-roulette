@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
 
+BARE_STRING_CHARACTERS = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$./:-"
+)
+
+
 class OpenStepParseError(ValueError):
     pass
 
@@ -86,6 +91,8 @@ class OpenStepParser:
             return (character, character, start)
         if character == '"':
             return ("STRING", OpenStepString(self._read_quoted_string(), True), start)
+        if character == "'":
+            self._error("apostrophe-quoted strings are not supported")
         return ("STRING", OpenStepString(self._read_unquoted_string()), start)
 
     def _skip_ignored(self):
@@ -178,12 +185,8 @@ class OpenStepParser:
 
     def _read_unquoted_string(self):
         start = self.index
-        while self.index < len(self.text):
-            character = self.text[self.index]
-            if character.isspace() or character in '{}()=;,"':
-                break
-            if self.text.startswith("//", self.index) or self.text.startswith("/*", self.index):
-                break
+        while (self.index < len(self.text)
+               and self.text[self.index] in BARE_STRING_CHARACTERS):
             self.index += 1
         if self.index == start:
             self._error("invalid unquoted string")

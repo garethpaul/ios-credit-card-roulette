@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
+XCODEBUILD_PATH = Path("/usr/bin/xcodebuild")
 OPENSTEP_SPEC = importlib.util.spec_from_file_location(
     "openstep_pbx", ROOT / "scripts/openstep_pbx.py"
 )
@@ -194,6 +195,11 @@ def pbx_is_unquoted(value):
     return isinstance(value, str) and not getattr(value, "quoted", False)
 
 
+def pbx_conditional_setting_keys(dictionary, setting_name):
+    prefix = setting_name + "["
+    return tuple(key for key in dictionary if str(key).startswith(prefix))
+
+
 def validate_project_topology(project, app_plist, test_plist, failures):
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "CardRoulette Info.plist must remain an application plist",
@@ -294,15 +300,20 @@ def validate_project_topology(project, app_plist, test_plist, failures):
                 failures)
 
         configuration_list = pbx_dictionary(objects.get(configuration_list_uuid))
+        build_configuration_uuids = tuple(
+            pbx_array(configuration_list.get("buildConfigurations"))
+        )
+        expected_configuration_uuids = frozenset(
+            configuration_uuid for _, configuration_uuid in configurations
+        )
         require(bool(configuration_list),
                 f"Xcode project must preserve the unique {target_name} configuration list UUID {configuration_list_uuid}",
                 failures)
         require(
             configuration_list.get("isa") == "XCConfigurationList"
-            and tuple(pbx_array(configuration_list.get("buildConfigurations"))) == tuple(
-                configuration_uuid for _, configuration_uuid in configurations
-            ),
-            f"{target_name} configuration list must preserve the exact ordered Debug/Release UUID topology",
+            and len(build_configuration_uuids) == len(expected_configuration_uuids)
+            and frozenset(build_configuration_uuids) == expected_configuration_uuids,
+            f"{target_name} configuration list must preserve the exact unique Debug/Release UUID membership",
             failures,
         )
 
@@ -327,6 +338,14 @@ def validate_project_topology(project, app_plist, test_plist, failures):
                     f"{target_name} {configuration_name} must define exactly one "
                     f"PRODUCT_BUNDLE_IDENTIFIER = {bundle_identifier}",
                     failures)
+            require(
+                not pbx_conditional_setting_keys(
+                    build_settings, "PRODUCT_BUNDLE_IDENTIFIER"
+                ),
+                f"{target_name} {configuration_name} must not define conditional "
+                "PRODUCT_BUNDLE_IDENTIFIER variants",
+                failures,
+            )
             require(build_settings.get("PRODUCT_NAME") == "$(TARGET_NAME)",
                     f"{target_name} {configuration_name} must derive PRODUCT_NAME from the bound target name",
                     failures)
@@ -337,22 +356,41 @@ def validate_project_topology(project, app_plist, test_plist, failures):
             pbx_dictionary(value).get("buildSettings")
         )
     )
-    require(bundle_identifier_owners == tuple(
+    expected_bundle_identifier_owners = frozenset(
         configuration_uuid
         for topology in TARGET_CONFIGURATION_TOPOLOGY
         for _, configuration_uuid in topology[-1]
-    ),
+    )
+    require(
+            len(bundle_identifier_owners) == len(expected_bundle_identifier_owners)
+            and frozenset(bundle_identifier_owners) == expected_bundle_identifier_owners,
             "Xcode project must contain only the four active target-local bundle identifier mappings",
             failures)
+    conditional_bundle_identifier_owners = tuple(
+        object_uuid
+        for object_uuid, value in objects.items()
+        if pbx_dictionary(value).get("isa") == "XCBuildConfiguration"
+        and pbx_conditional_setting_keys(
+            pbx_dictionary(pbx_dictionary(value).get("buildSettings")),
+            "PRODUCT_BUNDLE_IDENTIFIER",
+        )
+    )
+    require(
+        not conditional_bundle_identifier_owners,
+        "Xcode project must not contain conditional PRODUCT_BUNDLE_IDENTIFIER mappings",
+        failures,
+    )
 
 
-def parse_xcodebuild_settings(output):
+def parse_xcodebuild_settings(output, expected_keys=None):
     settings = {}
     for line in output.splitlines():
         match = re.match(r"^\s{4}([A-Z][A-Z0-9_]*) = (.*)$", line)
         if not match:
             continue
         key, value = match.groups()
+        if expected_keys is not None and key not in expected_keys:
+            continue
         if key in settings and settings[key] != value:
             raise ValueError(f"conflicting xcodebuild values for {key}")
         settings[key] = value
@@ -363,48 +401,51 @@ def validate_effective_project_settings(xcodebuild, failures):
     for (target_name, _, _, _, _, _, product_type, plist_path,
          bundle_identifier, configurations) in TARGET_CONFIGURATION_TOPOLOGY:
         for configuration_name, _ in configurations:
-            result = subprocess.run(
-                [
-                    str(xcodebuild),
-                    "-project", "CardRoulette.xcodeproj",
-                    "-target", target_name,
-                    "-configuration", configuration_name,
-                    "-showBuildSettings",
-                ],
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            require(
-                result.returncode == 0,
-                f"xcodebuild could not resolve {target_name} {configuration_name} settings: "
-                + result.stdout.strip(),
-                failures,
-            )
-            if result.returncode != 0:
-                continue
-            try:
-                settings = parse_xcodebuild_settings(result.stdout)
-            except ValueError as error:
-                failures.append(
-                    f"xcodebuild returned ambiguous {target_name} {configuration_name} settings: {error}"
+            for sdk in ("iphoneos", "iphonesimulator"):
+                expected = {
+                    "TARGET_NAME": target_name,
+                    "PRODUCT_NAME": target_name,
+                    "PRODUCT_BUNDLE_IDENTIFIER": bundle_identifier,
+                    "PRODUCT_TYPE": product_type,
+                    "INFOPLIST_FILE": plist_path,
+                }
+                result = subprocess.run(
+                    [
+                        str(xcodebuild),
+                        "-project", "CardRoulette.xcodeproj",
+                        "-target", target_name,
+                        "-configuration", configuration_name,
+                        "-sdk", sdk,
+                        "-showBuildSettings",
+                    ],
+                    cwd=ROOT,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
                 )
-                continue
-            expected = {
-                "TARGET_NAME": target_name,
-                "PRODUCT_NAME": target_name,
-                "PRODUCT_BUNDLE_IDENTIFIER": bundle_identifier,
-                "PRODUCT_TYPE": product_type,
-                "INFOPLIST_FILE": plist_path,
-            }
-            for key, value in expected.items():
                 require(
-                    settings.get(key) == value,
-                    f"{target_name} {configuration_name} effective {key} must be {value!r}, "
-                    f"got {settings.get(key)!r}",
+                    result.returncode == 0,
+                    f"xcodebuild could not resolve {target_name} {configuration_name} "
+                    f"{sdk} settings: " + result.stdout.strip(),
                     failures,
                 )
+                if result.returncode != 0:
+                    continue
+                try:
+                    settings = parse_xcodebuild_settings(result.stdout, expected)
+                except ValueError as error:
+                    failures.append(
+                        f"xcodebuild returned ambiguous {target_name} {configuration_name} "
+                        f"{sdk} settings: {error}"
+                    )
+                    continue
+                for key, value in expected.items():
+                    require(
+                        settings.get(key) == value,
+                        f"{target_name} {configuration_name} {sdk} effective {key} "
+                        f"must be {value!r}, got {settings.get(key)!r}",
+                        failures,
+                    )
 
 
 def main():
@@ -1075,7 +1116,7 @@ def main():
             "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",
             failures)
 
-    xcodebuild = Path("/usr/bin/xcodebuild")
+    xcodebuild = XCODEBUILD_PATH
     if xcodebuild.is_file() and os.access(xcodebuild, os.X_OK):
         result = subprocess.run(
             [
@@ -1094,7 +1135,11 @@ def main():
         if result.returncode == 0:
             validate_effective_project_settings(xcodebuild, failures)
     else:
-        print("xcodebuild unavailable; static iOS baseline only.")
+        if not failures:
+            print(
+                "xcodebuild unavailable; static project grammar and topology validated; "
+                "effective settings not executed."
+            )
 
     if failures:
         for failure in failures:

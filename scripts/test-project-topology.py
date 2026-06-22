@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 import importlib.util
+import contextlib
+import io
+import os
 import plistlib
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,6 +70,46 @@ class OpenStepParserTests(unittest.TestCase):
             with self.subTest(fixture=fixture):
                 with self.assertRaises(OpenStepParseError):
                     parse_openstep(fixture)
+
+    def test_rejects_apostrophe_quoted_strings(self):
+        for fixture in (
+            "{ 'name' = CardRoulette; }",
+            "{ name = 'CardRoulette'; }",
+        ):
+            with self.subTest(fixture=fixture):
+                with self.assertRaises(OpenStepParseError):
+                    parse_openstep(fixture)
+
+    def test_rejects_invalid_bare_token_characters(self):
+        for token in ("@odd", "name#fragment", "value\\escape"):
+            with self.subTest(token=token):
+                with self.assertRaises(OpenStepParseError):
+                    parse_openstep("{ metadata = " + token + "; }")
+
+
+class XcodeBuildSettingsParserTests(unittest.TestCase):
+    def test_ignores_unrelated_duplicate_rows_when_expected_settings_are_unique(self):
+        output = """\
+    SDKROOT = iphonesimulator26.0
+    PRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRoulette
+    SDKROOT = /Applications/Xcode.app/iPhoneSimulator.sdk
+"""
+        self.assertEqual(
+            CHECK_BASELINE.parse_xcodebuild_settings(
+                output, {"PRODUCT_BUNDLE_IDENTIFIER"}
+            ),
+            {"PRODUCT_BUNDLE_IDENTIFIER": "com.gpj.CardRoulette"},
+        )
+
+    def test_rejects_conflicting_expected_setting_rows(self):
+        output = """\
+    PRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRoulette
+    PRODUCT_BUNDLE_IDENTIFIER = com.attacker.CardRoulette
+"""
+        with self.assertRaises(ValueError):
+            CHECK_BASELINE.parse_xcodebuild_settings(
+                output, {"PRODUCT_BUNDLE_IDENTIFIER"}
+            )
 
 
 class ProjectTopologyTests(unittest.TestCase):
@@ -141,6 +186,146 @@ class ProjectTopologyTests(unittest.TestCase):
             return project[:app_start] + test_block + app_block + project[section_end:]
 
         self.run_mutation(mutate, expected_success=True)
+
+    def test_accepts_reordered_configuration_objects_and_lists(self):
+        def mutate(project):
+            app_debug_start = project.index(
+                "\t\tFDAE1E8F1B1A487600A89C51 /* Debug */ = {"
+            )
+            app_release_start = project.index(
+                "\t\tFDAE1E901B1A487600A89C51 /* Release */ = {"
+            )
+            test_debug_start = project.index(
+                "\t\tFDAE1E921B1A487600A89C51 /* Debug */ = {"
+            )
+            test_release_start = project.index(
+                "\t\tFDAE1E931B1A487600A89C51 /* Release */ = {"
+            )
+            section_end = project.index("/* End XCBuildConfiguration section */")
+            app_debug = project[app_debug_start:app_release_start]
+            app_release = project[app_release_start:test_debug_start]
+            test_debug = project[test_debug_start:test_release_start]
+            test_release = project[test_release_start:section_end]
+            project = (
+                project[:app_debug_start]
+                + test_release
+                + app_release
+                + test_debug
+                + app_debug
+                + project[section_end:]
+            )
+            project = project.replace(
+                "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,\n"
+                "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,",
+                "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,\n"
+                "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,",
+                1,
+            )
+            return project.replace(
+                "\t\t\t\tFDAE1E921B1A487600A89C51 /* Debug */,\n"
+                "\t\t\t\tFDAE1E931B1A487600A89C51 /* Release */,",
+                "\t\t\t\tFDAE1E931B1A487600A89C51 /* Release */,\n"
+                "\t\t\t\tFDAE1E921B1A487600A89C51 /* Debug */,",
+                1,
+            )
+
+        self.run_mutation(mutate, expected_success=True)
+
+    def test_rejects_duplicate_configuration_list_members(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,",
+            "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,",
+            1,
+        ))
+
+    def test_rejects_conditional_bundle_identifier_variants(self):
+        app_identifier = "PRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRoulette;"
+        test_identifier = "PRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRouletteTests;"
+        conditions = (
+            "sdk=iphonesimulator*",
+            "platform=iphonesimulator",
+            "arch=*",
+            "config=Debug",
+        )
+        for identifier, value in (
+            (app_identifier, "com.attacker.CardRoulette"),
+            (test_identifier, "com.attacker.CardRouletteTests"),
+        ):
+            for occurrence in (1, 2):
+                for condition in conditions:
+                    with self.subTest(
+                        identifier=identifier,
+                        occurrence=occurrence,
+                        condition=condition,
+                    ):
+                        qualified = (
+                            f'"PRODUCT_BUNDLE_IDENTIFIER[{condition}]" = {value};'
+                        )
+                        self.run_mutation(
+                            lambda project, identifier=identifier,
+                            occurrence=occurrence, qualified=qualified:
+                            replace_occurrence(
+                                project,
+                                identifier,
+                                identifier + "\n\t\t\t\t" + qualified,
+                                occurrence,
+                            )
+                        )
+
+    def test_no_xcode_static_gate_rejects_invalid_project_grammar(self):
+        project = (ROOT / PROJECT_PATH).read_text(encoding="utf-8").replace(
+            "\tclasses = {\n\t};",
+            "\tclasses = {\n\t\tmetadata = @odd;\n\t};",
+            1,
+        )
+        original_read = CHECK_BASELINE.read
+
+        def read_with_invalid_project(relative_path):
+            if relative_path == str(PROJECT_PATH):
+                return project
+            return original_read(relative_path)
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as empty_path:
+            with mock.patch.object(CHECK_BASELINE, "read", read_with_invalid_project), \
+                    mock.patch.object(
+                        CHECK_BASELINE,
+                        "XCODEBUILD_PATH",
+                        Path(empty_path) / "missing-xcodebuild",
+                        create=True,
+                    ), \
+                    mock.patch.object(CHECK_BASELINE.subprocess, "check_call"), \
+                    mock.patch.dict(os.environ, {"PATH": empty_path}, clear=False), \
+                    contextlib.redirect_stdout(stdout), \
+                    contextlib.redirect_stderr(stderr):
+                result = CHECK_BASELINE.main()
+
+        self.assertEqual(result, 1)
+        self.assertIn("Xcode project must be valid OpenStep syntax", stderr.getvalue())
+        self.assertNotIn("effective settings validated", stdout.getvalue())
+
+    def test_no_xcode_static_gate_reports_exact_environment_boundary(self):
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as empty_path:
+            with mock.patch.object(
+                    CHECK_BASELINE,
+                    "XCODEBUILD_PATH",
+                    Path(empty_path) / "missing-xcodebuild",
+                    create=True,
+                ), mock.patch.object(CHECK_BASELINE.subprocess, "check_call"), \
+                    mock.patch.dict(os.environ, {"PATH": empty_path}, clear=False), \
+                    contextlib.redirect_stdout(stdout), \
+                    contextlib.redirect_stderr(stderr):
+                result = CHECK_BASELINE.main()
+
+        self.assertEqual(result, 0, stderr.getvalue())
+        self.assertIn(
+            "xcodebuild unavailable; static project grammar and topology validated; "
+            "effective settings not executed.",
+            stdout.getvalue(),
+        )
 
     def test_accepts_unicode_and_nested_nonidentity_metadata(self):
         self.run_mutation(lambda project: project.replace(
@@ -443,16 +628,6 @@ class ProjectTopologyTests(unittest.TestCase):
                 lambda project: project.replace(
                     test_identifier,
                     'PRODUCT_BUNDLE_IDENTIFIER = "com.gpj.CardRouletteTests";',
-                    1,
-                ),
-            ),
-            (
-                "reordered-app-configurations",
-                lambda project: project.replace(
-                    "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,\n"
-                    "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,",
-                    "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,\n"
-                    "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,",
                     1,
                 ),
             ),
