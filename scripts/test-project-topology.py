@@ -8,11 +8,63 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT_PATH = Path("CardRoulette.xcodeproj/project.pbxproj")
 APP_DEBUG_IDENTIFIER = "\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRoulette;"
+OPENSTEP_SPEC = importlib.util.spec_from_file_location(
+    "openstep_pbx", ROOT / "scripts/openstep_pbx.py"
+)
+OPENSTEP_PBX = importlib.util.module_from_spec(OPENSTEP_SPEC)
+OPENSTEP_SPEC.loader.exec_module(OPENSTEP_PBX)
+OpenStepParseError = OPENSTEP_PBX.OpenStepParseError
+parse_openstep = OPENSTEP_PBX.parse_openstep
 SPEC = importlib.util.spec_from_file_location(
     "check_baseline", ROOT / "scripts/check-baseline.py"
 )
 CHECK_BASELINE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECK_BASELINE)
+
+
+class OpenStepParserTests(unittest.TestCase):
+    def test_parses_comments_quoted_escapes_nested_values_and_unicode(self):
+        parsed = parse_openstep(r'''
+            // !$*UTF8*$!
+            {
+                "na\U006de" = "Caf\U00e9 🎲";
+                nested = {
+                    values = (one, "tw\157", { enabled = YES; });
+                };
+                /* braces and assignments here are ignored: { name = decoy; } */
+            }
+        ''')
+        self.assertEqual(parsed["name"], "Café 🎲")
+        self.assertEqual(parsed["nested"]["values"], ["one", "two", {"enabled": "YES"}])
+
+    def test_combines_unicode_surrogate_escape_pairs(self):
+        parsed = parse_openstep(r'{ emoji = "\Ud83d\Ude00"; }')
+        self.assertEqual(parsed["emoji"], "😀")
+
+    def test_rejects_unpaired_unicode_surrogate_escapes(self):
+        for fixture in (r'{ key = "\Ud83d"; }', r'{ key = "\Ude00"; }'):
+            with self.subTest(fixture=fixture):
+                with self.assertRaises(OpenStepParseError):
+                    parse_openstep(fixture)
+
+    def test_rejects_duplicate_normalized_keys(self):
+        with self.assertRaises(OpenStepParseError):
+            parse_openstep(r'{ name = CardRoulette; "na\U006de" = Legacy; }')
+
+    def test_rejects_duplicate_object_uuids(self):
+        with self.assertRaises(OpenStepParseError):
+            parse_openstep('''{
+                objects = {
+                    AAAAAAAAAAAAAAAAAAAAAAAA = { isa = PBXNativeTarget; };
+                    "AAAAAAAAAAAAAAAAAAAAAAAA" = { isa = PBXFileReference; };
+                };
+            }''')
+
+    def test_rejects_unterminated_comments_and_containers(self):
+        for fixture in ("{ key = value; /*", "{ key = (value, );", '{ key = "value; }'):
+            with self.subTest(fixture=fixture):
+                with self.assertRaises(OpenStepParseError):
+                    parse_openstep(fixture)
 
 
 class ProjectTopologyTests(unittest.TestCase):
@@ -75,6 +127,28 @@ class ProjectTopologyTests(unittest.TestCase):
             1,
         ), expected_success=True)
 
+    def test_accepts_reordered_native_target_objects(self):
+        def mutate(project):
+            app_start = project.index(
+                "\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */ = {"
+            )
+            test_start = project.index(
+                "\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */ = {"
+            )
+            section_end = project.index("/* End PBXNativeTarget section */")
+            app_block = project[app_start:test_start]
+            test_block = project[test_start:section_end]
+            return project[:app_start] + test_block + app_block + project[section_end:]
+
+        self.run_mutation(mutate, expected_success=True)
+
+    def test_accepts_unicode_and_nested_nonidentity_metadata(self):
+        self.run_mutation(lambda project: project.replace(
+            "\tclasses = {\n\t};",
+            '\tclasses = {\n\t\tmetadata = { label = "Café 🎲"; };\n\t};',
+            1,
+        ), expected_success=True)
+
     def test_rejects_app_target_rename(self):
         self.run_mutation(lambda project: project.replace(
             "\t\t\tname = CardRoulette;",
@@ -102,6 +176,152 @@ class ProjectTopologyTests(unittest.TestCase):
             "\t\t\tproductName = CardRouletteLegacyTests;",
             1,
         ))
+
+    def test_rejects_quoted_bundle_identifier_with_nested_decoy(self):
+        def mutate(project):
+            project = project.replace(
+                APP_DEBUG_IDENTIFIER,
+                '\t\t\t\t"PRODUCT_BUNDLE_IDENTIFIER" = com.attacker.CardRoulette;',
+                1,
+            )
+            configuration_end = project.index(
+                "\t\t\t};\n\t\t\tname = Debug;",
+                project.index('"PRODUCT_BUNDLE_IDENTIFIER"'),
+            )
+            return project[:configuration_end + len("\t\t\t};")] + (
+                "\n\t\t\tdecoyIdentity = {\n"
+                "\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.gpj.CardRoulette;\n"
+                "\t\t\t};"
+            ) + project[configuration_end + len("\t\t\t};"):]
+
+        self.run_mutation(mutate)
+
+    def test_rejects_quoted_target_name_with_nested_decoy(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\t\tname = CardRoulette;",
+            '\t\t\t"name" = CardRouletteLegacy;\n'
+            "\t\t\tdecoyIdentity = {\n"
+            "\t\t\t\tname = CardRoulette;\n"
+            "\t\t\t};",
+            1,
+        ))
+
+    def test_rejects_escaped_target_name_with_nested_decoy(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\t\tname = CardRoulette;",
+            '\t\t\t"na\\U006de" = CardRouletteLegacy;\n'
+            "\t\t\tdecoyIdentity = {\n"
+            "\t\t\t\tname = CardRoulette;\n"
+            "\t\t\t};",
+            1,
+        ))
+
+    def test_rejects_duplicate_escaped_key_in_target(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\t\tname = CardRoulette;",
+            "\t\t\tname = CardRoulette;\n"
+            '\t\t\t"na\\U006de" = CardRouletteLegacy;',
+            1,
+        ))
+
+    def test_rejects_duplicate_quoted_object_uuid(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */ = {",
+            '\t\t"FDAE1E6E1B1A487600A89C51" = { isa = PBXFileReference; };\n'
+            "\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */ = {",
+            1,
+        ))
+
+    def test_rejects_nested_identity_decoys_across_topology(self):
+        cases = (
+            (
+                "product-name",
+                "\t\t\tproductName = CardRoulette;",
+                '\t\t\t"productName" = CardRouletteLegacy;\n'
+                "\t\t\tdecoy = { productName = CardRoulette; };",
+            ),
+            (
+                "configuration-list-owner",
+                "\t\t\tbuildConfigurationList = FDAE1E8E1B1A487600A89C51 "
+                '/* Build configuration list for PBXNativeTarget "CardRoulette" */;',
+                '\t\t\t"buildConfigurationList" = FDAE1E911B1A487600A89C51;\n'
+                "\t\t\tdecoy = { buildConfigurationList = FDAE1E8E1B1A487600A89C51; };",
+            ),
+            (
+                "product-reference",
+                "\t\t\tproductReference = FDAE1E6F1B1A487600A89C51 /* CardRoulette.app */;",
+                '\t\t\t"productReference" = FDAE1E841B1A487600A89C51;\n'
+                "\t\t\tdecoy = { productReference = FDAE1E6F1B1A487600A89C51; };",
+            ),
+            (
+                "product-type",
+                '\t\t\tproductType = "com.apple.product-type.application";',
+                '\t\t\t"productType" = "com.apple.product-type.bundle.unit-test";\n'
+                '\t\t\tdecoy = { productType = "com.apple.product-type.application"; };',
+            ),
+            (
+                "product-file-type",
+                "explicitFileType = wrapper.application;",
+                '"explicitFileType" = wrapper.cfbundle; '
+                "decoy = { explicitFileType = wrapper.application; };",
+            ),
+            (
+                "product-path",
+                "path = CardRoulette.app;",
+                '"path" = CardRouletteLegacy.app; '
+                "decoy = { path = CardRoulette.app; };",
+            ),
+            (
+                "product-source-tree",
+                "sourceTree = BUILT_PRODUCTS_DIR;",
+                '"sourceTree" = SOURCE_ROOT; '
+                "decoy = { sourceTree = BUILT_PRODUCTS_DIR; };",
+            ),
+            (
+                "configuration-membership",
+                "\t\t\tbuildConfigurations = (\n"
+                "\t\t\t\tFDAE1E8F1B1A487600A89C51 /* Debug */,\n"
+                "\t\t\t\tFDAE1E901B1A487600A89C51 /* Release */,\n"
+                "\t\t\t);",
+                '\t\t\t"buildConfigurations" = (\n'
+                "\t\t\t\tFDAE1E921B1A487600A89C51,\n"
+                "\t\t\t\tFDAE1E931B1A487600A89C51,\n"
+                "\t\t\t);\n"
+                "\t\t\tdecoy = { buildConfigurations = (\n"
+                "\t\t\t\tFDAE1E8F1B1A487600A89C51,\n"
+                "\t\t\t\tFDAE1E901B1A487600A89C51,\n"
+                "\t\t\t); };",
+            ),
+            (
+                "configuration-name",
+                "\t\t\tname = Debug;",
+                '\t\t\t"name" = Development;\n'
+                "\t\t\tdecoy = { name = Debug; };",
+                2,
+            ),
+            (
+                "plist-path",
+                "\t\t\t\tINFOPLIST_FILE = CardRoulette/Info.plist;",
+                '\t\t\t\t"INFOPLIST_FILE" = CardRouletteTests/Info.plist;\n'
+                "\t\t\t\tdecoy = { INFOPLIST_FILE = CardRoulette/Info.plist; };",
+            ),
+            (
+                "product-name-setting",
+                '\t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";',
+                '\t\t\t\t"PRODUCT_NAME" = CardRouletteLegacy;\n'
+                '\t\t\t\tdecoy = { PRODUCT_NAME = "$(TARGET_NAME)"; };',
+            ),
+        )
+        for case in cases:
+            name, original, replacement = case[:3]
+            occurrence = case[3] if len(case) == 4 else 1
+            with self.subTest(name=name):
+                self.run_mutation(
+                    lambda project, original=original, replacement=replacement,
+                    occurrence=occurrence: replace_occurrence(
+                        project, original, replacement, occurrence
+                    )
+                )
 
     def test_rejects_similarly_named_decoy_target(self):
         def mutate(project):
