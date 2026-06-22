@@ -187,6 +187,127 @@ class ProjectTopologyTests(unittest.TestCase):
 
         self.run_mutation(mutate, expected_success=True)
 
+    def test_accepts_reordered_root_target_membership(self):
+        self.run_mutation(lambda project: project.replace(
+            "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */,\n"
+            "\t\t\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */,",
+            "\t\t\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */,\n"
+            "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */,",
+            1,
+        ), expected_success=True)
+
+    def test_rejects_missing_extra_or_duplicate_root_target_membership(self):
+        target_rows = (
+            "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */,\n"
+            "\t\t\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */,"
+        )
+        mutations = {
+            "missing": "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */ ,",
+            "extra": target_rows + "\n\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAA /* Extra */,",
+            "duplicate": (
+                "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette */,\n"
+                "\t\t\t\tFDAE1E6E1B1A487600A89C51 /* CardRoulette duplicate */,"
+            ),
+            "nested-array": (
+                "\t\t\t\t(FDAE1E6E1B1A487600A89C51),\n"
+                "\t\t\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */,"
+            ),
+            "nested-dictionary": (
+                "\t\t\t\t{ target = FDAE1E6E1B1A487600A89C51; },\n"
+                "\t\t\t\tFDAE1E831B1A487600A89C51 /* CardRouletteTests */,"
+            ),
+        }
+        for name, replacement in mutations.items():
+            with self.subTest(name=name):
+                self.run_mutation(
+                    lambda project, replacement=replacement: project.replace(
+                        target_rows, replacement, 1
+                    )
+                )
+
+    def test_accepts_supported_canonical_object_versions(self):
+        for version in (42, 46, 77, 90):
+            if version == 46:
+                continue
+            with self.subTest(version=version):
+                self.run_mutation(lambda project, version=version: project.replace(
+                    "objectVersion = 46;", f"objectVersion = {version};", 1
+                ), expected_success=True)
+
+    def test_rejects_invalid_top_level_project_schema(self):
+        mutations = {
+            "missing-archive-version": lambda project: project.replace(
+                "\tarchiveVersion = 1;\n", "", 1
+            ),
+            "wrong-archive-version": lambda project: project.replace(
+                "archiveVersion = 1;", "archiveVersion = 2;", 1
+            ),
+            "nonnumeric-archive-version": lambda project: project.replace(
+                "archiveVersion = 1;", "archiveVersion = nonsense;", 1
+            ),
+            "quoted-archive-version": lambda project: project.replace(
+                "archiveVersion = 1;", 'archiveVersion = "1";', 1
+            ),
+            "missing-object-version": lambda project: project.replace(
+                "\tobjectVersion = 46;\n", "", 1
+            ),
+            "nonnumeric-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = nonsense;", 1
+            ),
+            "duplicate-object-version": lambda project: project.replace(
+                "objectVersion = 46;",
+                "objectVersion = 46;\n\tobjectVersion = 46;",
+                1,
+            ),
+            "quoted-object-version": lambda project: project.replace(
+                "objectVersion = 46;", 'objectVersion = "46";', 1
+            ),
+            "leading-zero-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = 046;", 1
+            ),
+            "fractional-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = 46.0;", 1
+            ),
+            "unsupported-low-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = 41;", 1
+            ),
+            "unsupported-high-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = 91;", 1
+            ),
+            "oversized-object-version": lambda project: project.replace(
+                "objectVersion = 46;", "objectVersion = " + ("9" * 5000) + ";", 1
+            ),
+            "missing-classes": lambda project: project.replace(
+                "\tclasses = {\n\t};\n", "", 1
+            ),
+            "nondictionary-classes": lambda project: project.replace(
+                "\tclasses = {\n\t};", "\tclasses = ();", 1
+            ),
+            "missing-objects": lambda project: project.replace(
+                "\tobjects = {", "\tprojectObjects = {", 1
+            ),
+            "nondictionary-objects": lambda project: project.replace(
+                "\tobjects = {", "\tobjects = (\n\t\t{", 1
+            ).replace(
+                "\n\t};\n\trootObject = FDAE1E671B1A487600A89C51",
+                "\n\t\t}\n\t);\n\trootObject = FDAE1E671B1A487600A89C51",
+                1,
+            ),
+            "missing-root-object": lambda project: project.replace(
+                "\trootObject = FDAE1E671B1A487600A89C51 /* Project object */;\n",
+                "",
+                1,
+            ),
+            "quoted-root-object": lambda project: project.replace(
+                "rootObject = FDAE1E671B1A487600A89C51",
+                'rootObject = "FDAE1E671B1A487600A89C51"',
+                1,
+            ),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                self.run_mutation(mutate)
+
     def test_accepts_reordered_configuration_objects_and_lists(self):
         def mutate(project):
             app_debug_start = project.index(
@@ -303,6 +424,43 @@ class ProjectTopologyTests(unittest.TestCase):
 
         self.assertEqual(result, 1)
         self.assertIn("Xcode project must be valid OpenStep syntax", stderr.getvalue())
+        self.assertNotIn("effective settings validated", stdout.getvalue())
+
+    def test_no_xcode_static_gate_rejects_invalid_project_schema(self):
+        project = (ROOT / PROJECT_PATH).read_text(encoding="utf-8").replace(
+            "objectVersion = 46;",
+            "objectVersion = nonsense;",
+            1,
+        )
+        original_read = CHECK_BASELINE.read
+
+        def read_with_invalid_project(relative_path):
+            if relative_path == str(PROJECT_PATH):
+                return project
+            return original_read(relative_path)
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as empty_path:
+            with mock.patch.object(CHECK_BASELINE, "read", read_with_invalid_project), \
+                    mock.patch.object(
+                        CHECK_BASELINE,
+                        "XCODEBUILD_PATH",
+                        Path(empty_path) / "missing-xcodebuild",
+                        create=True,
+                    ), \
+                    mock.patch.object(CHECK_BASELINE.subprocess, "check_call"), \
+                    mock.patch.dict(os.environ, {"PATH": empty_path}, clear=False), \
+                    contextlib.redirect_stdout(stdout), \
+                    contextlib.redirect_stderr(stderr):
+                result = CHECK_BASELINE.main()
+
+        self.assertEqual(result, 1)
+        self.assertIn(
+            "objectVersion must be a canonical supported integer",
+            stderr.getvalue(),
+        )
+        self.assertNotIn("static project grammar and topology validated", stdout.getvalue())
         self.assertNotIn("effective settings validated", stdout.getvalue())
 
     def test_no_xcode_static_gate_reports_exact_environment_boundary(self):

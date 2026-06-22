@@ -195,6 +195,14 @@ def pbx_is_unquoted(value):
     return isinstance(value, str) and not getattr(value, "quoted", False)
 
 
+def pbx_canonical_unsigned_integer(value):
+    if (not pbx_is_unquoted(value)
+            or len(value) > 3
+            or not re.fullmatch(r"0|[1-9][0-9]*", value)):
+        return None
+    return int(value)
+
+
 def pbx_conditional_setting_keys(dictionary, setting_name):
     prefix = setting_name + "["
     return tuple(key for key in dictionary if str(key).startswith(prefix))
@@ -221,21 +229,48 @@ def validate_project_topology(project, app_plist, test_plist, failures):
         return
 
     root = pbx_dictionary(parsed_project)
-    objects = pbx_dictionary(root.get("objects"))
-    require(bool(root) and bool(objects),
-            "Xcode project must contain root and objects dictionaries",
+    archive_version = pbx_canonical_unsigned_integer(root.get("archiveVersion"))
+    object_version = pbx_canonical_unsigned_integer(root.get("objectVersion"))
+    classes = root.get("classes")
+    objects_value = root.get("objects")
+    objects = pbx_dictionary(objects_value)
+    require(pbx_has_unquoted_key(root, "archiveVersion") and archive_version == 1,
+            "Xcode project archiveVersion must be the canonical supported value 1",
             failures)
-    require(root.get("rootObject") == "FDAE1E671B1A487600A89C51",
+    require(pbx_has_unquoted_key(root, "objectVersion")
+            and object_version is not None
+            and 42 <= object_version <= 90,
+            "Xcode project objectVersion must be a canonical supported integer from 42 through 90",
+            failures)
+    require(pbx_has_unquoted_key(root, "classes") and isinstance(classes, dict),
+            "Xcode project classes must be a dictionary",
+            failures)
+    require(pbx_has_unquoted_key(root, "objects")
+            and isinstance(objects_value, dict)
+            and bool(objects),
+            "Xcode project must contain a nonempty objects dictionary",
+            failures)
+    require(pbx_has_unquoted_key(root, "rootObject")
+            and pbx_is_unquoted(root.get("rootObject"))
+            and root.get("rootObject") == "FDAE1E671B1A487600A89C51",
             "Xcode project must preserve the exact root project UUID",
             failures)
 
     project_object = pbx_dictionary(objects.get("FDAE1E671B1A487600A89C51"))
+    expected_target_uuids = tuple(
+        topology[1] for topology in TARGET_CONFIGURATION_TOPOLOGY
+    )
+    project_target_uuids = tuple(pbx_array(project_object.get("targets")))
     require(
         project_object.get("isa") == "PBXProject"
-        and tuple(pbx_array(project_object.get("targets"))) == tuple(
-            topology[1] for topology in TARGET_CONFIGURATION_TOPOLOGY
-        ),
-        "Xcode project must preserve the exact ordered app/test target UUID topology",
+        and len(project_target_uuids) == len(expected_target_uuids)
+        and all(
+            pbx_is_unquoted(target_uuid)
+            and re.fullmatch(r"[A-F0-9]{24}", target_uuid)
+            for target_uuid in project_target_uuids
+        )
+        and frozenset(project_target_uuids) == frozenset(expected_target_uuids),
+        "Xcode project must preserve exact unique app/test target UUID membership",
         failures,
     )
     native_target_uuids = tuple(
