@@ -58,6 +58,7 @@ root-test::
 
 lint::
 	@"$$PYTHON" "$$ROOT/scripts/check-baseline.py"
+	@"$$PYTHON" "$$ROOT/scripts/test-project-topology.py"
 
 check:: lint
 

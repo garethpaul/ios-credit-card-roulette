@@ -65,6 +65,10 @@ class MakeTrustBoundaryTests(unittest.TestCase):
             f"Path({str(cls.root_test_marker)!r}).write_text('root-test\\n')\n",
         )
         cls.write_executable(
+            cls.repository_scripts / "test-project-topology.py",
+            "#!/usr/bin/env python3\n",
+        )
+        cls.write_executable(
             cls.repository_scripts / "run-tests.sh",
             "#!/bin/sh\nset -eu\n\"$XCODEBUILD\" -project CardRoulette.xcodeproj test\n",
         )
