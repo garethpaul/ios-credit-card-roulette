@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-25
+
+- Rejected participant names made only from Unicode whitespace, control, or
+  format scalars while preserving visible joined emoji names.
+
 ## 2026-06-21
 
 - Isolated Make verification from caller-selected shell, Python, Xcode, root,

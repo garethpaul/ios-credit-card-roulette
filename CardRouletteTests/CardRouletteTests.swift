@@ -46,6 +46,13 @@ class CardRouletteTests: XCTestCase {
         XCTAssertNil(ParticipantListItem.normalizedName(nil), "Missing participant names should be ignored")
     }
 
+    func testParticipantNameNormalizationRejectsInvisibleOnlyNames() {
+        XCTAssertNil(ParticipantListItem.normalizedName("\u{200B}\u{2060}"), "Format-only participant names should be ignored")
+        XCTAssertNil(ParticipantListItem.normalizedName("\u{0000}"), "Control-only participant names should be ignored")
+        XCTAssertNil(ParticipantListItem.normalizedName("\u{2060} \n \u{2060}"), "Whitespace surrounded by format scalars should be ignored")
+        XCTAssertEqual(ParticipantListItem.normalizedName("👨‍👩‍👧‍👦"), "👨‍👩‍👧‍👦", "Visible names that contain format scalars should remain valid")
+    }
+
     func testParticipantItemFromAddParticipantSource() {
         let controller = ViewController()
         let source = AddParticipantViewController()

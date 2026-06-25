@@ -19,7 +19,9 @@ Priority:
 - Keep the visual demo and README aligned with app behavior
 - Avoid storing real payment information
 - Keep participant input trimmed and winner display fallbacks explicit
-- Keep participant-name normalization shared and covered by focused tests
+- Keep participant-name normalization shared, reject names made only from
+  Unicode whitespace, control, or format scalars, and preserve visible joined
+  emoji
 - Keep typed and nonempty participant filtering in front of the legacy mutable
   player list
 - Keep button and shake navigation behind one typed winner trigger with a

@@ -20,7 +20,13 @@ class ParticipantListItem: NSObject {
     }
 
     class func normalizedName(_ name: String?) -> String? {
-        if let participantName = name?.trimmingCharacters(in: .whitespacesAndNewlines), !participantName.isEmpty {
+        if let participantName = name?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !participantName.isEmpty,
+           participantName.unicodeScalars.contains(where: { scalar in
+               let generalCategory = scalar.properties.generalCategory
+               return !CharacterSet.whitespacesAndNewlines.contains(scalar) &&
+                   generalCategory != .control && generalCategory != .format
+           }) {
             return participantName
         }
 

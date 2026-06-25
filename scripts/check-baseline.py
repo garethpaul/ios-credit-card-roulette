@@ -40,6 +40,7 @@ SHAKE_MOTION_PLAN = ROOT / "docs/plans/2026-06-14-shake-motion-routing.md"
 SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-16-shake-first-responder-lifecycle.md"
 WINNER_SINGLE_FLIGHT_PLAN = ROOT / "docs/plans/2026-06-16-winner-presentation-single-flight.md"
 WINNER_ACTION_AVAILABILITY_PLAN = ROOT / "docs/plans/2026-06-18-winner-action-availability.md"
+INVISIBLE_PARTICIPANT_NAMES_PLAN = ROOT / "docs/plans/2026-06-25-invisible-participant-names.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -540,6 +541,7 @@ def main():
         "scripts/test-make-trust-boundary.py",
         "scripts/test-project-topology.py",
         "docs/plans/2026-06-21-make-trust-boundary.md",
+        "docs/plans/2026-06-25-invisible-participant-names.md",
     ]
 
     for relative_path in required_files:
@@ -598,6 +600,7 @@ def main():
     shake_responder_plan = SHAKE_RESPONDER_PLAN.read_text(encoding="utf-8") if SHAKE_RESPONDER_PLAN.exists() else ""
     winner_single_flight_plan = WINNER_SINGLE_FLIGHT_PLAN.read_text(encoding="utf-8") if WINNER_SINGLE_FLIGHT_PLAN.exists() else ""
     winner_action_availability_plan = WINNER_ACTION_AVAILABILITY_PLAN.read_text(encoding="utf-8") if WINNER_ACTION_AVAILABILITY_PLAN.exists() else ""
+    invisible_participant_names_plan = INVISIBLE_PARTICIPANT_NAMES_PLAN.read_text(encoding="utf-8") if INVISIBLE_PARTICIPANT_NAMES_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["/bin/sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -782,6 +785,20 @@ def main():
     add_controller = read("CardRoulette/AddParticipantViewController.swift")
     require("participantItem = nil" in add_controller and "ParticipantListItem.normalizedName" in add_controller,
             "participant entry must use the shared normalizer and ignore blank input",
+            failures)
+    require("unicodeScalars.contains" in participant_model and
+            ".generalCategory" in participant_model and
+            ".control" in participant_model and
+            ".format" in participant_model and
+            ".whitespacesAndNewlines.contains" in participant_model,
+            "Participant normalization must reject names made only from whitespace, control, or format scalars",
+            failures)
+    require("testParticipantNameNormalizationRejectsInvisibleOnlyNames" in tests and
+            'normalizedName("\\u{200B}\\u{2060}")' in tests and
+            'normalizedName("\\u{0000}")' in tests and
+            'normalizedName("\\u{2060} \\n \\u{2060}")' in tests and
+            'normalizedName("👨‍👩‍👧‍👦")' in tests,
+            "XCTest must cover invisible-only names without rejecting visible joined emoji",
             failures)
     require("testParticipantNameNormalizationTrimsWhitespace" in tests and "XCTAssertEqual" in tests and
             "testParticipantNameNormalizationRejectsBlankNames" in tests and "XCTAssertNil" in tests and
@@ -1031,6 +1048,33 @@ def main():
             failures)
     require(all("nonempty" in document for document in normalized_guidance),
             "project guidance must document nonempty participant eligibility",
+            failures)
+    require(all("whitespace, control, or format" in document for document in normalized_guidance),
+            "project guidance must document invisible-only participant rejection",
+            failures)
+    invisible_name_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", invisible_participant_names_plan
+    )
+    invisible_name_work = markdown_section(
+        invisible_participant_names_plan, "Work Completed"
+    )
+    invisible_name_verification = markdown_section(
+        invisible_participant_names_plan, "Verification Completed"
+    )
+    invisible_name_required = (
+        "focused portable source contract",
+        "Swift 5.10 Docker",
+        "43 project-topology tests",
+        "Seven isolated hostile mutations",
+        "28163591711",
+        "28163593617",
+        "final Codex review",
+        "merge-base commit",
+    )
+    require(invisible_name_statuses == ["completed"] and invisible_name_work and
+            all(item in invisible_name_verification for item in invisible_name_required) and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", invisible_name_verification),
+            "invisible participant names plan must record completed work and verification",
             failures)
     shake_responder_statuses = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", shake_responder_plan

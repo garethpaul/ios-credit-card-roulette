@@ -53,7 +53,10 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 
 - Open `CardRoulette.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 - The app stores participant names only in memory for the current run.
-- Participant-name normalization is shared by both entry screens and covered by focused XCTest assertions.
+- Participant-name normalization is shared by both entry screens, rejects
+  names made only from Unicode whitespace, control, or format scalars, and
+  remains covered by focused XCTest assertions without rejecting visible
+  joined emoji.
 - Visible participant rows filter the legacy mutable array to typed entries with
   nonempty normalized names, so malformed values cannot create blank or
   mismatched table rows.
@@ -109,7 +112,7 @@ for a checkout path containing literal `$(`, change into the checkout and invoke
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed and nonempty participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
 The pinned GitHub Actions check runs `/usr/bin/make test` on `macos-15`. It first runs
-the static baseline, then compiles the unsigned Swift 5 app and executes twenty-seven
+the static baseline, then compiles the unsigned Swift 5 app and executes twenty-eight
 participant normalization, array-safety, removal, unwind, and winner-destination
 tests on an available iPhone simulator. It does not persist or upload participant
 data, perform payment processing, deploy, or use signing material.
@@ -157,6 +160,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   eligibility based on typed participants.
 - See `docs/plans/2026-06-13-visible-participant-rows.md` for typed table-row
   rendering and removal across malformed legacy entries.
+- See `docs/plans/2026-06-25-invisible-participant-names.md` for the Unicode
+  control-or-format-only participant-name guard.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing
