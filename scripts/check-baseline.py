@@ -783,6 +783,18 @@ def main():
     require("participantItem = nil" in add_controller and "ParticipantListItem.normalizedName" in add_controller,
             "participant entry must use the shared normalizer and ignore blank input",
             failures)
+    require("unicodeScalars.contains" in participant_model and
+            ".generalCategory" in participant_model and
+            ".control" in participant_model and
+            ".format" in participant_model,
+            "Participant normalization must reject names made only from control or format scalars",
+            failures)
+    require("testParticipantNameNormalizationRejectsInvisibleOnlyNames" in tests and
+            'normalizedName("\\u{200B}\\u{2060}")' in tests and
+            'normalizedName("\\u{0000}")' in tests and
+            'normalizedName("👨‍👩‍👧‍👦")' in tests,
+            "XCTest must cover invisible-only names without rejecting visible joined emoji",
+            failures)
     require("testParticipantNameNormalizationTrimsWhitespace" in tests and "XCTAssertEqual" in tests and
             "testParticipantNameNormalizationRejectsBlankNames" in tests and "XCTAssertNil" in tests and
             "testParticipantItemFromAddParticipantSource" in tests and
@@ -1031,6 +1043,9 @@ def main():
             failures)
     require(all("nonempty" in document for document in normalized_guidance),
             "project guidance must document nonempty participant eligibility",
+            failures)
+    require(all("control or format" in document for document in normalized_guidance),
+            "project guidance must document invisible-only participant rejection",
             failures)
     shake_responder_statuses = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", shake_responder_plan
