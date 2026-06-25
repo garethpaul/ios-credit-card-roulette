@@ -2,8 +2,8 @@
 
 ## 2026-06-25
 
-- Rejected participant names made only from Unicode control or format scalars
-  while preserving visible joined emoji names.
+- Rejected participant names made only from Unicode whitespace, control, or
+  format scalars while preserving visible joined emoji names.
 
 ## 2026-06-21
 

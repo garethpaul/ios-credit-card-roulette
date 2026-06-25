@@ -24,7 +24,8 @@ class ParticipantListItem: NSObject {
            !participantName.isEmpty,
            participantName.unicodeScalars.contains(where: { scalar in
                let generalCategory = scalar.properties.generalCategory
-               return generalCategory != .control && generalCategory != .format
+               return !CharacterSet.whitespacesAndNewlines.contains(scalar) &&
+                   generalCategory != .control && generalCategory != .format
            }) {
             return participantName
         }

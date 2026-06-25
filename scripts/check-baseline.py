@@ -789,12 +789,14 @@ def main():
     require("unicodeScalars.contains" in participant_model and
             ".generalCategory" in participant_model and
             ".control" in participant_model and
-            ".format" in participant_model,
-            "Participant normalization must reject names made only from control or format scalars",
+            ".format" in participant_model and
+            ".whitespacesAndNewlines.contains" in participant_model,
+            "Participant normalization must reject names made only from whitespace, control, or format scalars",
             failures)
     require("testParticipantNameNormalizationRejectsInvisibleOnlyNames" in tests and
             'normalizedName("\\u{200B}\\u{2060}")' in tests and
             'normalizedName("\\u{0000}")' in tests and
+            'normalizedName("\\u{2060} \\n \\u{2060}")' in tests and
             'normalizedName("👨‍👩‍👧‍👦")' in tests,
             "XCTest must cover invisible-only names without rejecting visible joined emoji",
             failures)
@@ -1047,7 +1049,7 @@ def main():
     require(all("nonempty" in document for document in normalized_guidance),
             "project guidance must document nonempty participant eligibility",
             failures)
-    require(all("control or format" in document for document in normalized_guidance),
+    require(all("whitespace, control, or format" in document for document in normalized_guidance),
             "project guidance must document invisible-only participant rejection",
             failures)
     invisible_name_statuses = re.findall(
@@ -1063,10 +1065,10 @@ def main():
         "focused portable source contract",
         "Swift 5.10 Docker",
         "43 project-topology tests",
-        "Three isolated hostile mutations",
+        "Seven isolated hostile mutations",
         "28163591711",
         "28163593617",
-        "Codex review",
+        "final Codex review",
         "merge-base commit",
     )
     require(invisible_name_statuses == ["completed"] and invisible_name_work and

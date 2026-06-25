@@ -40,8 +40,9 @@ Helpful reports include:
   checkout without an explicit Makefile path.
 - A typed winner trigger with a nonempty-name guard should prevent invalid
   legacy array entries from navigating to winner presentation.
-- Participant normalization should reject names made only from Unicode control
-  or format scalars so invisible entries cannot become rows or winners.
+- Participant normalization should reject names made only from Unicode
+  whitespace, control, or format scalars so invisible entries cannot become
+  rows or winners.
 - Shake navigation should use UIKit's authoritative motion argument while
   retaining the typed participant gate.
 - Visible first-responder ownership is limited to the active roulette screen;
