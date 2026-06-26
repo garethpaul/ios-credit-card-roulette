@@ -41,6 +41,7 @@ SHAKE_RESPONDER_PLAN = ROOT / "docs/plans/2026-06-16-shake-first-responder-lifec
 WINNER_SINGLE_FLIGHT_PLAN = ROOT / "docs/plans/2026-06-16-winner-presentation-single-flight.md"
 WINNER_ACTION_AVAILABILITY_PLAN = ROOT / "docs/plans/2026-06-18-winner-action-availability.md"
 INVISIBLE_PARTICIPANT_NAMES_PLAN = ROOT / "docs/plans/2026-06-25-invisible-participant-names.md"
+ROADMAP_RECONCILIATION_PLAN = ROOT / "docs/plans/2026-06-26-roadmap-reconciliation.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -542,6 +543,7 @@ def main():
         "scripts/test-project-topology.py",
         "docs/plans/2026-06-21-make-trust-boundary.md",
         "docs/plans/2026-06-25-invisible-participant-names.md",
+        "docs/plans/2026-06-26-roadmap-reconciliation.md",
     ]
 
     for relative_path in required_files:
@@ -601,6 +603,7 @@ def main():
     winner_single_flight_plan = WINNER_SINGLE_FLIGHT_PLAN.read_text(encoding="utf-8") if WINNER_SINGLE_FLIGHT_PLAN.exists() else ""
     winner_action_availability_plan = WINNER_ACTION_AVAILABILITY_PLAN.read_text(encoding="utf-8") if WINNER_ACTION_AVAILABILITY_PLAN.exists() else ""
     invisible_participant_names_plan = INVISIBLE_PARTICIPANT_NAMES_PLAN.read_text(encoding="utf-8") if INVISIBLE_PARTICIPANT_NAMES_PLAN.exists() else ""
+    roadmap_reconciliation_plan = ROADMAP_RECONCILIATION_PLAN.read_text(encoding="utf-8") if ROADMAP_RECONCILIATION_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["/bin/sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -1193,6 +1196,31 @@ def main():
                 failures)
     require(workflow == EXPECTED_WORKFLOW,
             "Check workflow must exactly match the bounded, credential-free macOS XCTest contract",
+            failures)
+    stale_roadmap_items = (
+        "Add tests or manual checks for participant validation and winner selection",
+        "Add hosted XCTest execution once a shared scheme is maintained",
+        "Clarify that the app does not process payments",
+    )
+    require(not any(item in vision for item in stale_roadmap_items) and
+            "No unclaimed roadmap item" in vision,
+            "VISION must retire completed validation, hosted XCTest, and payment guidance items",
+            failures)
+    roadmap_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", roadmap_reconciliation_plan
+    )
+    roadmap_verification = markdown_section(
+        roadmap_reconciliation_plan, "Verification Completed"
+    )
+    require(roadmap_statuses == ["completed"] and
+            "twenty-eight" in roadmap_verification and
+            "macos-15" in roadmap_verification and
+            "does not" in roadmap_verification and
+            "make check" in roadmap_verification and
+            "Six isolated hostile mutations" in roadmap_verification and
+            "git diff --check" in roadmap_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", roadmap_verification),
+            "roadmap reconciliation plan must record completed evidence",
             failures)
 
     xcodebuild = XCODEBUILD_PATH

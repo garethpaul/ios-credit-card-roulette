@@ -126,6 +126,11 @@ GitHub Actions runs `make test` on `macos-15` for pushes and pull requests. That
 job runs the Python static baseline before the macOS simulator XCTest gate; the
 checked-in workflow does not define a separate Ubuntu job.
 
+The focused XCTest suite covers participant normalization and eligibility,
+winner selection and presentation guards, visible-row mapping, removal, unwind,
+and destination configuration. This sample does not process payments or accept
+credit card details.
+
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets

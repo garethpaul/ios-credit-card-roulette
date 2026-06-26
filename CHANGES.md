@@ -1,5 +1,52 @@
 # Changes
 
+## 2026-06-26 01:36 PDT - P2 - Retire completed roadmap items
+
+### Summary
+
+Reconciled the forward roadmap with participant/winner XCTest coverage, hosted
+shared-scheme XCTest, and the existing no-payment guidance.
+
+### Work completed
+
+- Verified twenty-eight focused XCTest cases cover participant validation and
+  winner-selection boundaries.
+- Verified pinned `macos-15` CI runs the shared-scheme `make test` gate.
+- Made the no-payment and no-card-details statement explicit in README guidance.
+- Replaced three completed roadmap bullets with an evidence-driven intake rule.
+
+### Threads
+
+- None; repository source, tests, workflow, plans, and guidance were reviewed
+  directly.
+
+### Files changed
+
+- `VISION.md` and `README.md` — current evidence and roadmap state.
+- `docs/plans/2026-06-26-roadmap-reconciliation.md` — completed decision record.
+- `scripts/check-baseline.py` — durable plan and roadmap contracts.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- RED static baseline — rejected the missing plan and stale roadmap state.
+- `/usr/bin/make check` — passed; local XCTest skipped without `xcodebuild`.
+- Six isolated hostile mutations — all rejected.
+- Python compilation and `git diff --check` — passed.
+
+### Bugs / findings
+
+- P2 maintenance: all three forward roadmap items had already shipped and could
+  prompt duplicate work.
+
+### Blockers
+
+- Local Xcode is unavailable; hosted macOS remains authoritative for XCTest.
+
+### Next action
+
+- Complete exact-head review, hosted macOS XCTest, CodeQL, and merge.
+
 ## 2026-06-25 23:32 - P1 - Restore cross-version Make verification
 
 ### Summary
