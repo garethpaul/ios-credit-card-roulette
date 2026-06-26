@@ -42,6 +42,7 @@ WINNER_SINGLE_FLIGHT_PLAN = ROOT / "docs/plans/2026-06-16-winner-presentation-si
 WINNER_ACTION_AVAILABILITY_PLAN = ROOT / "docs/plans/2026-06-18-winner-action-availability.md"
 INVISIBLE_PARTICIPANT_NAMES_PLAN = ROOT / "docs/plans/2026-06-25-invisible-participant-names.md"
 ROADMAP_RECONCILIATION_PLAN = ROOT / "docs/plans/2026-06-26-roadmap-reconciliation.md"
+INVISIBLE_NAME_BOUNDARIES_PLAN = ROOT / "docs/plans/2026-06-26-invisible-name-boundaries.md"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -604,6 +605,7 @@ def main():
     winner_action_availability_plan = WINNER_ACTION_AVAILABILITY_PLAN.read_text(encoding="utf-8") if WINNER_ACTION_AVAILABILITY_PLAN.exists() else ""
     invisible_participant_names_plan = INVISIBLE_PARTICIPANT_NAMES_PLAN.read_text(encoding="utf-8") if INVISIBLE_PARTICIPANT_NAMES_PLAN.exists() else ""
     roadmap_reconciliation_plan = ROADMAP_RECONCILIATION_PLAN.read_text(encoding="utf-8") if ROADMAP_RECONCILIATION_PLAN.exists() else ""
+    invisible_name_boundaries_plan = INVISIBLE_NAME_BOUNDARIES_PLAN.read_text(encoding="utf-8") if INVISIBLE_NAME_BOUNDARIES_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     subprocess.check_call(["/bin/sh", "-n", "scripts/run-tests.sh"], cwd=ROOT)
@@ -725,8 +727,9 @@ def main():
             failures)
     participant_model = read("CardRoulette/ParticipantListItem.swift")
     require("class func normalizedName(_ name: String?) -> String?" in participant_model and
-            "trimmingCharacters(in: .whitespacesAndNewlines)" in participant_model and
-            "participantName.isEmpty" in participant_model and "return nil" in participant_model,
+            "guard let participantName = name else" in participant_model and
+            "return String(participantName[firstVisibleScalarIndex...lastVisibleScalarIndex])" in participant_model and
+            "return nil" in participant_model,
             "ParticipantListItem must expose a shared optional name normalizer",
             failures)
     require("participantItem = nil" in winner_controller and "ParticipantListItem.normalizedName" in winner_controller,
@@ -789,7 +792,10 @@ def main():
     require("participantItem = nil" in add_controller and "ParticipantListItem.normalizedName" in add_controller,
             "participant entry must use the shared normalizer and ignore blank input",
             failures)
-    require("unicodeScalars.contains" in participant_model and
+    require("participantScalars.firstIndex" in participant_model and
+            "participantScalars.lastIndex" in participant_model and
+            "firstVisibleScalarIndex" in participant_model and
+            "lastVisibleScalarIndex" in participant_model and
             ".generalCategory" in participant_model and
             ".control" in participant_model and
             ".format" in participant_model and
@@ -802,6 +808,12 @@ def main():
             'normalizedName("\\u{2060} \\n \\u{2060}")' in tests and
             'normalizedName("👨‍👩‍👧‍👦")' in tests,
             "XCTest must cover invisible-only names without rejecting visible joined emoji",
+            failures)
+    require("testParticipantNameNormalizationTrimsInvisibleBoundaryScalars" in tests and
+            'normalizedName("\\u{200B}\\u{0000} Alice \\u{2060}")' in tests and
+            'normalizedName("\\u{200B}👨‍👩‍👧‍👦\\u{2060}")' in tests and
+            'normalizedName("A\\u{200B}B")' in tests,
+            "XCTest must trim invisible name boundaries while preserving internal format scalars",
             failures)
     require("testParticipantNameNormalizationTrimsWhitespace" in tests and "XCTAssertEqual" in tests and
             "testParticipantNameNormalizationRejectsBlankNames" in tests and "XCTAssertNil" in tests and
@@ -1055,6 +1067,9 @@ def main():
     require(all("whitespace, control, or format" in document for document in normalized_guidance),
             "project guidance must document invisible-only participant rejection",
             failures)
+    require(all("invisible boundary scalars" in document for document in normalized_guidance),
+            "project guidance must document invisible participant-name boundary trimming",
+            failures)
     invisible_name_statuses = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", invisible_participant_names_plan
     )
@@ -1078,6 +1093,33 @@ def main():
             all(item in invisible_name_verification for item in invisible_name_required) and
             not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", invisible_name_verification),
             "invisible participant names plan must record completed work and verification",
+            failures)
+    invisible_boundary_statuses = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", invisible_name_boundaries_plan
+    )
+    invisible_boundary_work = markdown_section(
+        invisible_name_boundaries_plan, "Work Completed"
+    )
+    invisible_boundary_verification = markdown_section(
+        invisible_name_boundaries_plan, "Verification Completed"
+    )
+    invisible_boundary_required = (
+        "RED `/usr/bin/make check`",
+        "Swift 5.10 Docker",
+        "six Make trust-boundary tests",
+        "forty-three project-topology tests",
+        "Four isolated hostile mutations",
+        "Gitleaks scanned sixty-seven commits",
+        "python3 -m py_compile",
+        "git diff --check",
+    )
+    require(invisible_boundary_statuses == ["completed"] and
+            invisible_boundary_work and
+            all(item in invisible_boundary_verification
+                for item in invisible_boundary_required) and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b",
+                          invisible_boundary_verification),
+            "invisible name boundaries plan must record completed work and verification",
             failures)
     shake_responder_statuses = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", shake_responder_plan

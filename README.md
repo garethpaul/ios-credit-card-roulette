@@ -55,8 +55,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - The app stores participant names only in memory for the current run.
 - Participant-name normalization is shared by both entry screens, rejects
   names made only from Unicode whitespace, control, or format scalars, and
-  remains covered by focused XCTest assertions without rejecting visible
-  joined emoji.
+  trims invisible boundary scalars from otherwise visible names. Focused
+  XCTest assertions preserve internal format scalars such as joined emoji.
 - Visible participant rows filter the legacy mutable array to typed entries with
   nonempty normalized names, so malformed values cannot create blank or
   mismatched table rows.

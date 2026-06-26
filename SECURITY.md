@@ -43,7 +43,8 @@ Helpful reports include:
   legacy array entries from navigating to winner presentation.
 - Participant normalization should reject names made only from Unicode
   whitespace, control, or format scalars so invisible entries cannot become
-  rows or winners.
+  rows or winners. Invisible boundary scalars should also be removed from
+  otherwise visible names without stripping internal emoji joiners.
 - Shake navigation should use UIKit's authoritative motion argument while
   retaining the typed participant gate.
 - Visible first-responder ownership is limited to the active roulette screen;

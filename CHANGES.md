@@ -1,5 +1,69 @@
 # Changes
 
+## 2026-06-26 11:37 PDT - P1 - Trim invisible participant-name boundaries
+
+### Summary
+
+Removed leading and trailing Unicode whitespace, control, and format scalars
+from otherwise visible participant names while preserving internal joiners.
+
+### Work completed
+
+- Replaced whitespace-only trimming with first/last visible Unicode scalar
+  boundary selection.
+- Removed invisible boundary scalars from otherwise visible participant names.
+- Preserved internal format scalars, including zero-width joiners in family
+  emoji and format scalars between visible letters.
+- Added XCTest regressions for mixed invisible boundaries, wrapped joined emoji,
+  and an internal zero-width format scalar.
+- Added fail-closed source, test, documentation, and plan contracts.
+
+### Threads
+
+- None; the previous cycle's indexed residual risk reproduced directly through
+  the shared normalizer.
+
+### Files changed
+
+- `CardRoulette/ParticipantListItem.swift` — scalar-boundary normalization.
+- `CardRouletteTests/CardRouletteTests.swift` — boundary and joiner regressions.
+- `scripts/check-baseline.py` — durable implementation and evidence contracts.
+- `README.md`, `SECURITY.md`, `VISION.md`, `AGENTS.md` — maintained guidance.
+- `docs/plans/2026-06-26-invisible-name-boundaries.md` — completed evidence.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- RED `/usr/bin/make check` rejected the old normalizer boundary.
+- Swift 5.10 Docker compilation and runtime assertions passed.
+- `/usr/bin/make check` passed six Make trust-boundary tests and forty-three project-topology tests; local XCTest skipped truthfully without Xcode.
+- Four isolated hostile mutations were rejected for the first boundary, format
+  guard, sliced return value, and internal-format regression.
+- Gitleaks scanned sixty-seven commits and found no leaks.
+- `git diff --check` passed.
+- Exact implementation head `8c6217e8664d03e5f65816d749cc957e183b0936`
+  passed both hosted baseline/XCTest runs, Actions/Python/Swift CodeQL analyses,
+  and aggregate CodeQL.
+- The required Codex review helper failed before analysis with OpenAI HTTP 401
+  on WebSocket and HTTPS transports. Immutable manual review confirmed exact
+  local, remote, and PR heads and found no actionable defect.
+
+### Bugs / findings
+
+- P1 participant identity: names such as zero-width/control-prefixed `Alice`
+  rendered like `Alice` but retained hidden boundary scalars in table and winner
+  state.
+
+### Blockers
+
+- Native XCTest requires hosted macOS/Xcode; the Linux gate validates the source
+  contract and executes the Foundation-only normalizer in Swift 5.10 Docker.
+
+### Next action
+
+- Validate the exact pull-request head with hosted XCTest and CodeQL, then merge
+  only if immutable review is clean.
+
 ## 2026-06-26 01:36 PDT - P2 - Retire completed roadmap items
 
 ### Summary

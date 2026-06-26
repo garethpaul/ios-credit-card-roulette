@@ -19,18 +19,28 @@ class ParticipantListItem: NSObject {
         super.init()
     }
 
+    private class func isVisibleNameScalar(_ scalar: Unicode.Scalar) -> Bool {
+        let generalCategory = scalar.properties.generalCategory
+        return !CharacterSet.whitespacesAndNewlines.contains(scalar) &&
+            generalCategory != .control && generalCategory != .format
+    }
+
     class func normalizedName(_ name: String?) -> String? {
-        if let participantName = name?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !participantName.isEmpty,
-           participantName.unicodeScalars.contains(where: { scalar in
-               let generalCategory = scalar.properties.generalCategory
-               return !CharacterSet.whitespacesAndNewlines.contains(scalar) &&
-                   generalCategory != .control && generalCategory != .format
-           }) {
-            return participantName
+        guard let participantName = name else {
+            return nil
         }
 
-        return nil
+        let participantScalars = participantName.unicodeScalars
+        guard let firstVisibleScalarIndex = participantScalars.firstIndex(where: { scalar in
+                  return isVisibleNameScalar(scalar)
+              }),
+              let lastVisibleScalarIndex = participantScalars.lastIndex(where: { scalar in
+                  return isVisibleNameScalar(scalar)
+              }) else {
+            return nil
+        }
+
+        return String(participantName[firstVisibleScalarIndex...lastVisibleScalarIndex])
     }
     
 }
