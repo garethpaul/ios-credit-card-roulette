@@ -39,8 +39,9 @@
 - Startup Makefiles can execute parse-time code before rejection, and later
   double-colon recipes remain caller authority. Do not use those caller programs
   when collecting repository validation evidence.
-- Make syntax in an explicit `-f` path is evaluated before the repository loads;
-  use the checkout as the working directory for paths containing literal `$(`.
+- Make syntax in an explicit `-f` path may be evaluated before the repository
+  loads on older GNU Make releases; use the checkout as the working directory
+  and omit `-f` for paths containing literal `$(`.
 
 ## PR / change guidance
 
