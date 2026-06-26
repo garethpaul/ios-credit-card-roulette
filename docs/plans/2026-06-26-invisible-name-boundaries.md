@@ -39,6 +39,12 @@ names to retain hidden prefixes or suffixes in table and winner state.
 - Gitleaks scanned sixty-seven commits and found no leaks.
 - `python3 -m py_compile scripts/check-baseline.py scripts/test-project-topology.py scripts/test-make-trust-boundary.py` passed.
 - Shell syntax checks and `git diff --check` passed.
+- Exact implementation head `8c6217e8664d03e5f65816d749cc957e183b0936`
+  passed both hosted baseline/XCTest runs, Actions/Python/Swift CodeQL analyses,
+  and aggregate CodeQL.
+- The required Codex review helper failed before analysis with OpenAI HTTP 401
+  on WebSocket and HTTPS transports. Immutable manual review pinned identical
+  local, remote, and PR heads and found no actionable defect.
 
 ## Residual Risk
 

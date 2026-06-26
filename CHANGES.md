@@ -41,6 +41,12 @@ from otherwise visible participant names while preserving internal joiners.
   guard, sliced return value, and internal-format regression.
 - Gitleaks scanned sixty-seven commits and found no leaks.
 - `git diff --check` passed.
+- Exact implementation head `8c6217e8664d03e5f65816d749cc957e183b0936`
+  passed both hosted baseline/XCTest runs, Actions/Python/Swift CodeQL analyses,
+  and aggregate CodeQL.
+- The required Codex review helper failed before analysis with OpenAI HTTP 401
+  on WebSocket and HTTPS transports. Immutable manual review confirmed exact
+  local, remote, and PR heads and found no actionable defect.
 
 ### Bugs / findings
 
