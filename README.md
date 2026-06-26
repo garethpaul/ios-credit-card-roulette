@@ -105,9 +105,11 @@ Startup Makefiles can execute parse-time code before rejection, and later
 double-colon recipes remain caller authority because GNU Make appends them after
 the repository recipe. Hosted verification invokes `/usr/bin/make` without either
 caller program.
-Make syntax in an explicit `-f` path is evaluated before the repository loads;
-for a checkout path containing literal `$(`, change into the checkout and invoke
-`/usr/bin/make` without an explicit Makefile path.
+Make syntax in an explicit `-f` path may be evaluated before the repository
+loads on older GNU Make releases, while newer releases can treat the same
+existing path literally. For a checkout path containing literal `$(`, use the
+cross-version-safe form: change into the checkout and invoke `/usr/bin/make`
+without an explicit Makefile path.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/project XML, checks the Swift source inventory and testability wiring, verifies that empty participant lists cannot crash winner selection, checks shared participant-name normalization, checks unwind source handling, checks typed and nonempty participant filtering for the legacy player list, checks guarded participant removal, checks winner destination handling, checks winner-screen fallback and input guards, checks table fallback cell handling, checks navigation logo title view ownership, checks invalid hex color fallback behavior, and guards against logging, persistence, network reporting, or payment-card handling.
 
@@ -162,6 +164,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   rendering and removal across malformed legacy entries.
 - See `docs/plans/2026-06-25-invisible-participant-names.md` for the Unicode
   control-or-format-only participant-name guard.
+- See `docs/plans/2026-06-25-cross-version-makefile-path.md` for the bounded GNU
+  Make 3.81/4.3 explicit-path behavior and cross-version-safe invocation.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard files, Xcode metadata, winner selection, or payment-boundary documentation.
 
 ## Contributing

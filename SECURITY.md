@@ -35,9 +35,10 @@ Helpful reports include:
   target-specific root/tool substitutions, and non-executing or error-ignoring modes.
 - Startup Makefiles can execute parse-time code before rejection, and later
   double-colon recipes remain caller authority. Hosted verification avoids both.
-- Make syntax in an explicit `-f` path is evaluated before the repository loads;
-  hostile checkout names containing literal `$(` must be invoked from inside the
-  checkout without an explicit Makefile path.
+- Make syntax in an explicit `-f` path may be evaluated before the repository
+  loads on older GNU Make releases; newer releases can treat the path literally.
+  Hostile checkout names containing literal `$(` must use the cross-version-safe
+  invocation from inside the checkout without an explicit Makefile path.
 - A typed winner trigger with a nonempty-name guard should prevent invalid
   legacy array entries from navigating to winner presentation.
 - Participant normalization should reject names made only from Unicode

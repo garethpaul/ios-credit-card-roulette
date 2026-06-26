@@ -266,14 +266,16 @@ class MakeTrustBoundaryTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn("MAKEFLAGS must not be overridden", result.stdout)
 
-    def test_hostile_shell_path_is_quoted_but_make_syntax_is_preload_authority(self):
+    def test_hostile_shell_path_is_quoted_and_make_syntax_behavior_is_bounded(self):
         shell_hostile_repository = self.fixture_root / "hostile '; `touch nope`; spaces"
         shutil.copytree(self.repository, shell_hostile_repository)
         result = self.run_make(
             "check", makefile=shell_hostile_repository / "Makefile", expected=None
         )
         self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertTrue(self.baseline_marker.exists())
 
+        self.setUp()
         hostile_repository = self.fixture_root / (
             "hostile $(shell touch " + str(self.hostile_marker) + ") ' checkout"
         )
@@ -281,8 +283,12 @@ class MakeTrustBoundaryTests(unittest.TestCase):
         result = self.run_make(
             "check", makefile=hostile_repository / "Makefile", expected=None
         )
-        self.assertTrue(self.hostile_marker.exists())
-        self.assertNotEqual(result.returncode, 0, result.stdout)
+        if self.hostile_marker.exists():
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertFalse(self.baseline_marker.exists())
+        else:
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertTrue(self.baseline_marker.exists())
 
     def test_documentation_states_enforced_and_unavoidable_boundaries(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -291,13 +297,13 @@ class MakeTrustBoundaryTests(unittest.TestCase):
         plan = (ROOT / "docs/plans/2026-06-21-make-trust-boundary.md").read_text(
             encoding="utf-8"
         )
-        combined = "\n".join((readme, agents, security, plan))
+        combined = " ".join("\n".join((readme, agents, security, plan)).split())
         for phrase in (
             "fixes `/bin/sh`",
             "non-executing or error-ignoring modes",
             "startup Makefiles can execute parse-time code before rejection",
             "later double-colon recipes remain caller authority",
-            "Make syntax in an explicit `-f` path is evaluated before the repository loads",
+            "Make syntax in an explicit `-f` path may be evaluated before the repository loads",
             "`/usr/bin/make`",
         ):
             with self.subTest(phrase=phrase):

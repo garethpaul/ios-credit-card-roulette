@@ -37,6 +37,8 @@ Startup Makefiles can execute parse-time code before rejection, and later
 double-colon recipes remain caller authority because GNU Make appends them after
 the checked-in recipe. The harness proves both limits instead of overstating the
 Makefile as a complete security boundary.
-Make syntax in an explicit `-f` path is evaluated before the repository loads.
-The hostile-path proof therefore requires paths containing literal `$(` to be
-invoked from inside the checkout without an explicit Makefile path.
+Make syntax in an explicit `-f` path may be evaluated before the repository
+loads on older GNU Make releases, while newer releases can treat the same
+existing path literally. The hostile-path proof accepts only those two bounded
+outcomes. Paths containing literal `$(` should still be invoked from inside the
+checkout without an explicit Makefile path for cross-version safety.

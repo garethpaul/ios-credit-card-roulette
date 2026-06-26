@@ -1,5 +1,64 @@
 # Changes
 
+## 2026-06-25 23:32 - P1 - Restore cross-version Make verification
+
+### Summary
+
+Fixed a reproducible Linux baseline failure caused by requiring GNU Make 4.3
+to reproduce GNU Make 3.81's pre-load expansion of `$(...)` in an explicit
+`-f` path.
+
+### Work completed
+
+- Isolated the safe shell-metacharacter probe from the Make-syntax probe so
+  marker evidence cannot leak between cases.
+- Bounded the hostile-path contract to the two observed safe interpretations:
+  pre-load expansion must fail before repository recipes, while literal-path
+  handling must run the repository baseline without executing the marker.
+- Made documentation assertions insensitive to Markdown line wrapping.
+- Clarified the cross-version-safe invocation in maintainer and security docs.
+
+### Threads
+
+- Started: cross-version Make path diagnosis — direct implementation.
+- Continued: continuous open-source maintenance loop.
+- Stopped: participant boundary normalization — deferred when the broken main
+  verification gate took priority.
+
+### Files changed
+
+- `scripts/test-make-trust-boundary.py` — isolated, version-bounded assertions.
+- `README.md`, `SECURITY.md`, `AGENTS.md` — cross-version caller-boundary guidance.
+- `docs/plans/2026-06-21-make-trust-boundary.md` — corrected original boundary.
+- `docs/plans/2026-06-25-cross-version-makefile-path.md` — completed fix plan.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- GNU Make 4.3 mainline harness — reproduced the original hostile-marker failure.
+- `python3 scripts/test-make-trust-boundary.py` — 6 tests passed.
+- `/usr/bin/make check` and `/usr/bin/make verify` — passed 6 trust-boundary
+  tests and 43 project-topology tests; XCTest skipped because Xcode is absent.
+- Python compilation, shell syntax, and `git diff --check` — passed.
+- Four isolated harness mutations — all rejected.
+
+### Bugs / findings
+
+- P1: The green macOS-oriented contract made the SDK-free Linux baseline fail
+  on a valid GNU Make 4.3 literal-path behavior.
+- P2: The hostile-path test retained a baseline marker from its preceding probe,
+  so it could not independently establish whether repository recipes ran.
+
+### Blockers
+
+- Local Xcode/XCTest execution is unavailable; exact-head hosted macOS remains
+  required to exercise GNU Make 3.81, the simulator build, and XCTest.
+
+### Next action
+
+- Open a focused pull request and require hosted macOS/XCTest plus CodeQL before
+  exact-head review and merge.
+
 ## 2026-06-25
 
 - Rejected participant names made only from Unicode whitespace, control, or
