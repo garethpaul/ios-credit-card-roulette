@@ -53,6 +53,12 @@ class CardRouletteTests: XCTestCase {
         XCTAssertEqual(ParticipantListItem.normalizedName("👨‍👩‍👧‍👦"), "👨‍👩‍👧‍👦", "Visible names that contain format scalars should remain valid")
     }
 
+    func testParticipantNameNormalizationTrimsInvisibleBoundaryScalars() {
+        XCTAssertEqual(ParticipantListItem.normalizedName("\u{200B}\u{0000} Alice \u{2060}"), "Alice", "Invisible boundary scalars should not survive normalization")
+        XCTAssertEqual(ParticipantListItem.normalizedName("\u{200B}👨‍👩‍👧‍👦\u{2060}"), "👨‍👩‍👧‍👦", "Boundary trimming should preserve internal emoji joiners")
+        XCTAssertEqual(ParticipantListItem.normalizedName("A\u{200B}B"), "A\u{200B}B", "Visible names should preserve internal format scalars")
+    }
+
     func testParticipantItemFromAddParticipantSource() {
         let controller = ViewController()
         let source = AddParticipantViewController()

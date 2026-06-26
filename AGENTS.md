@@ -57,6 +57,8 @@
 - Participant names and payment choices should remain local-only. Do not add storage, upload, analytics, or real payment processing without a separate privacy and security design.
 - Keep participant normalization rejecting names made only from Unicode
   whitespace, control, or format scalars while allowing visible joined emoji.
+- Keep invisible boundary scalars trimmed from otherwise visible participant
+  names while preserving internal format scalars such as emoji joiners.
 - Route shake winner actions from UIKit's authoritative motion argument and
   retain the typed participant gate.
 - Preserve visible first-responder ownership so physical shake input reaches
