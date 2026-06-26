@@ -49,12 +49,14 @@ Priority:
 - Keep the app and test targets on Swift 5 with the iOS 12 deployment target
 - Keep pinned GitHub Actions macOS CI executing the shared-scheme XCTest suite
   through the canonical `make test` gate
+- Keep participant validation and randomized winner selection covered by the
+  focused XCTest suite
+- Keep project guidance explicit that the sample does not process payments
 
 Next priorities:
 
-- Add tests or manual checks for participant validation and winner selection
-- Add hosted XCTest execution once a shared scheme is maintained
-- Clarify that the app does not process payments
+- No unclaimed roadmap item; select future work from reproduced defects,
+  platform changes, or reviewed user needs.
 
 Contribution rules:
 
